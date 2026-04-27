@@ -13,6 +13,17 @@ const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || '';
 const telegramChatId = process.env.TELEGRAM_CHAT_ID || '';
 const corsAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS || '';
 
+function parseTrustProxy(value) {
+  if (value === undefined || value === null || value === '') return 1;
+  const normalized = String(value).trim().toLowerCase();
+  if (normalized === 'true') return true;
+  if (normalized === 'false') return false;
+  const asNumber = Number(normalized);
+  return Number.isNaN(asNumber) ? value : asNumber;
+}
+
+const trustProxy = parseTrustProxy(process.env.TRUST_PROXY);
+
 if (isProduction) {
   const missingVars = [];
   if (!supabaseUrl) missingVars.push('SUPABASE_URL');
@@ -36,6 +47,7 @@ module.exports = {
   telegramBotToken,
   telegramChatId,
   corsAllowedOrigins,
+  trustProxy,
   supabaseUrl,
   supabaseServiceRoleKey,
   scraperEndpoint: process.env.SCRAPER_ENDPOINT || 'https://gobiz.bowo-store.id',

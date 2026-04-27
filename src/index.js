@@ -6,7 +6,7 @@ const markupRoutes = require('./routes/markupRoutes');
 const brandingRoutes = require('./routes/brandingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const paymentGatewaySettingsRoutes = require('./routes/paymentGatewaySettingsRoutes');
-const { port, authSecret } = require('./config/env');
+const { port, authSecret, trustProxy } = require('./config/env');
 const { startPolling } = require('./services/gobizPollingService');
 const { startCronJobs } = require('./services/cronService');
 const { ensureSeedUsers } = require('./store/usersStore');
@@ -18,6 +18,9 @@ const {
 } = require('./middlewares/securityMiddleware');
 
 const app = express();
+
+// App runs behind Nginx/aaPanel in production, so trust proxy headers for real client IP.
+app.set('trust proxy', trustProxy);
 
 // ── Security Middleware ───────────────────────────────────
 app.use(helmetMiddleware);       // Security headers (XSS, clickjacking, etc.)
