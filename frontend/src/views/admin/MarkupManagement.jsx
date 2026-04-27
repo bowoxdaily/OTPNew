@@ -28,7 +28,6 @@ import {
   CircularProgress,
 } from '@mui/material';
 import { IconPlus, IconPencil, IconTrash, IconAlertCircle } from '@tabler/icons-react';
-import { getAuthToken } from 'src/utils/authSession';
 import { apiFetch, readJsonSafe } from 'src/utils/apiClient';
 
 export default function MarkupManagement() {
@@ -73,15 +72,11 @@ export default function MarkupManagement() {
 
   const syncCacheAndFetch = async () => {
     try {
-      const token = getAuthToken();
       // Sync cache first
-      const syncRes = await fetch('/api/admin/cache/sync/7', {
+      const syncRes = await apiFetch('/api/admin/cache/sync/7', {
         method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
-      const syncData = await syncRes.json();
+      const syncData = await readJsonSafe(syncRes);
       
       if (syncData.success) {
         console.log('✅ Cache synced, fetching services...');
@@ -101,13 +96,8 @@ export default function MarkupManagement() {
   const fetchMarkups = async () => {
     try {
       setLoading(true);
-      const token = getAuthToken();
-      const response = await fetch('/api/admin/markups', {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
+      const response = await apiFetch('/api/admin/markups');
+      const data = await readJsonSafe(response);
       if (data.success) {
         setMarkups(data.data);
         setError(null);
@@ -158,17 +148,12 @@ export default function MarkupManagement() {
 
   const handleSave = async () => {
     try {
-      const token = getAuthToken();
-      const response = await fetch('/api/admin/markups', {
+      const response = await apiFetch('/api/admin/markups', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify(formData),
       });
 
-      const data = await response.json();
+      const data = await readJsonSafe(response);
       if (data.success) {
         setOpenDialog(false);
         fetchMarkups();
@@ -185,15 +170,11 @@ export default function MarkupManagement() {
     if (!confirm('Apakah Anda yakin ingin menghapus?')) return;
 
     try {
-      const token = getAuthToken();
-      const response = await fetch(`/api/admin/markups/${id}`, {
+      const response = await apiFetch(`/api/admin/markups/${id}`, {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
       });
 
-      const data = await response.json();
+      const data = await readJsonSafe(response);
       if (data.success) {
         fetchMarkups();
         setError(null);
@@ -207,17 +188,12 @@ export default function MarkupManagement() {
 
   const handleToggle = async (id, isActive) => {
     try {
-      const token = getAuthToken();
-      const response = await fetch(`/api/admin/markups/${id}`, {
+      const response = await apiFetch(`/api/admin/markups/${id}`, {
         method: 'PATCH',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
         body: JSON.stringify({ is_active: !isActive }),
       });
 
-      const data = await response.json();
+      const data = await readJsonSafe(response);
       if (data.success) {
         fetchMarkups();
         setError(null);

@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
 import { resolve } from 'path';
 import fs from 'fs/promises';
@@ -6,7 +6,11 @@ import svgr from '@svgr/rollup';
 // import svgr from 'vite-plugin-svgr'
 
 // https://vitejs.dev/config/
-export default defineConfig({
+export default defineConfig(({ mode }) => {
+    const env = loadEnv(mode, process.cwd(), '');
+    const devProxyTarget = env.VITE_DEV_PROXY_TARGET || 'https://otpv1.bowo-store.id';
+
+    return {
     resolve: {
         alias: {
             src: resolve(__dirname, 'src'),
@@ -47,13 +51,14 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'https://otpv1.bowo-store.id',
+                target: devProxyTarget,
                 changeOrigin: true,
             },
             '/uploads': {
-                target: 'https://otpv1.bowo-store.id',
+                target: devProxyTarget,
                 changeOrigin: true,
             },
         },
     },
+};
 });

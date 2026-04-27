@@ -22,7 +22,6 @@ import { IconUpload, IconCheck, IconRefresh, IconPalette, IconPhoto, IconBrandCh
 import PageContainer from 'src/components/container/PageContainer';
 import DashboardCard from 'src/components/shared/DashboardCard';
 import { apiFetch, readJsonSafe } from 'src/utils/apiClient';
-import { getAuthToken } from 'src/utils/authSession';
 import { useBranding } from 'src/contexts/BrandingContext';
 
 const BrandingManagement = () => {
@@ -102,16 +101,12 @@ const BrandingManagement = () => {
       formData.append('file', file);
       formData.append('type', fileType);
 
-      const token = getAuthToken();
-      const response = await fetch('/api/admin/branding/upload', {
+      const response = await apiFetch('/api/admin/branding/upload', {
         method: 'POST',
         body: formData,
-        headers: {
-          ...(token && { Authorization: `Bearer ${token}` }),
-        },
       });
 
-      const data = await response.json();
+      const data = await readJsonSafe(response);
       if (data.success) {
         const urlField = isLogo ? 'logo_url' : 'favicon_url';
         setBranding((prev) => ({ ...prev, [urlField]: data.data.url }));
