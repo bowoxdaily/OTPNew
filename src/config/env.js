@@ -9,6 +9,8 @@ const authSecret = process.env.AUTH_SECRET || 'change-this-secret';
 const webhookSecret = process.env.WEBHOOK_SECRET || '';
 const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || '';
+const telegramChatId = process.env.TELEGRAM_CHAT_ID || '';
 
 if (isProduction) {
   const missingVars = [];
@@ -30,6 +32,8 @@ module.exports = {
   providerBaseUrl: process.env.PROVIDER_BASE_URL || 'https://virtusim.com/api/v2/json.php',
   authSecret,
   webhookSecret,
+  telegramBotToken,
+  telegramChatId,
   supabaseUrl,
   supabaseServiceRoleKey,
   scraperEndpoint: process.env.SCRAPER_ENDPOINT || 'https://gobiz.bowo-store.id',

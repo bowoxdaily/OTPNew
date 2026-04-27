@@ -2,6 +2,7 @@ const { createTopup, getTopupById, updateTopupStatus, getUserTopups } = require(
 const { findById, atomicRefundBalance } = require('../store/usersStore');
 const { supabase } = require('../services/supabaseClient');
 const { generateManualTransaction } = require('../services/paymentService');
+const { sendTopupSuccessNotification } = require('../services/telegramNotificationService');
 const crypto = require('crypto');
 const { webhookSecret, isProduction } = require('../config/env');
 
@@ -107,6 +108,14 @@ async function approveTopup(req, res, next) {
     
     // Tambah saldo ke user
     await atomicRefundBalance(topup.user_id, Number(topup.amount));
+    const user = await findById(topup.user_id);
+    await sendTopupSuccessNotification({
+      orderId: topup.id,
+      userId: topup.user_id,
+      username: user?.username,
+      amount: topup.amount,
+      source: 'admin-approve',
+    });
 
     return res.status(200).json({ success: true, message: 'Topup berhasil disetujui, saldo user bertambah!' });
   } catch (error) {
@@ -366,6 +375,14 @@ async function gobizWebhook(req, res, next) {
     // Auto approve the matching topup
     await updateTopupStatus(topup.id, 'success');
     await atomicRefundBalance(topup.user_id, Number(topup.amount));
+    const user = await findById(topup.user_id);
+    await sendTopupSuccessNotification({
+      orderId: topup.id,
+      userId: topup.user_id,
+      username: user?.username,
+      amount: topup.amount,
+      source: 'gobiz-webhook',
+    });
 
     // Tandai idempotency key sudah diproses
     await markWebhookProcessed(idempotencyKey, eventType || 'payment.settlement');

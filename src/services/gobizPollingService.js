@@ -15,7 +15,8 @@ const path = require('path');
 const fetch = require('node-fetch');
 const { supabase } = require('./supabaseClient');
 const { updateTopupStatus } = require('../store/topupStore');
-const { atomicRefundBalance } = require('../store/usersStore');
+const { atomicRefundBalance, findById } = require('../store/usersStore');
+const { sendTopupSuccessNotification } = require('./telegramNotificationService');
 
 // ── Config ──────────────────────────────────────────────
 const POLLING_INTERVAL = Number(process.env.GOBIZ_POLLING_INTERVAL || 30000);
@@ -111,6 +112,14 @@ async function matchAndApproveTopups() {
         try {
           await updateTopupStatus(matchingTopup.id, 'success');
           await atomicRefundBalance(matchingTopup.user_id, Number(matchingTopup.amount));
+          const user = await findById(matchingTopup.user_id);
+          await sendTopupSuccessNotification({
+            orderId: matchingTopup.id,
+            userId: matchingTopup.user_id,
+            username: user?.username,
+            amount: matchingTopup.amount,
+            source: 'gobiz-polling',
+          });
 
           processedTransactionIds.add(txId);
           const idx = pendingTopups.indexOf(matchingTopup);
