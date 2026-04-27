@@ -11,6 +11,7 @@ const supabaseUrl = process.env.SUPABASE_URL || '';
 const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || '';
 const telegramChatId = process.env.TELEGRAM_CHAT_ID || '';
+const corsAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS || '';
 
 if (isProduction) {
   const missingVars = [];
@@ -34,6 +35,7 @@ module.exports = {
   webhookSecret,
   telegramBotToken,
   telegramChatId,
+  corsAllowedOrigins,
   supabaseUrl,
   supabaseServiceRoleKey,
   scraperEndpoint: process.env.SCRAPER_ENDPOINT || 'https://gobiz.bowo-store.id',

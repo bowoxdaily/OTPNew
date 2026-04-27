@@ -15,10 +15,19 @@ const helmetMiddleware = helmet({
 /**
  * CORS — restrict API access to allowed origins
  */
-const allowedOrigins = [
+const defaultAllowedOrigins = [
   'http://localhost:5173',  // Vite dev server
   'http://localhost:3000',  // Backend itself
+  'https://otp.bowo-store.id',
+  'https://www.otp.bowo-store.id',
 ];
+
+const envAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((item) => item.trim())
+  .filter(Boolean);
+
+const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
 
 const corsMiddleware = cors({
   origin: function (origin, callback) {
