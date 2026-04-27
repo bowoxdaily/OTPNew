@@ -47,11 +47,11 @@ export default defineConfig({
     server: {
         proxy: {
             '/api': {
-                target: 'http://localhost:3002',
+                target: 'https://otpv1.bowo-store.id',
                 changeOrigin: true,
             },
             '/uploads': {
-                target: 'http://localhost:3002',
+                target: 'https://otpv1.bowo-store.id',
                 changeOrigin: true,
             },
         },
