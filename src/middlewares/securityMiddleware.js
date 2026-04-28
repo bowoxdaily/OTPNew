@@ -20,6 +20,8 @@ const defaultAllowedOrigins = [
   'http://localhost:3000',  // Backend itself
   'https://otp.bowo-store.id',
   'https://www.otp.bowo-store.id',
+  'https://bitnexid.com',
+  'https://www.bitnexid.com',
 ];
 
 const envAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
@@ -28,14 +30,45 @@ const envAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
   .filter(Boolean);
 
 const allowedOrigins = [...new Set([...defaultAllowedOrigins, ...envAllowedOrigins])];
+const envAllowedOriginSuffixes = (process.env.CORS_ALLOWED_ORIGIN_SUFFIXES || '')
+  .split(',')
+  .map((item) => item.trim().toLowerCase())
+  .filter(Boolean);
+
+function normalizeOrigin(origin) {
+  if (!origin) return '';
+  try {
+    return new URL(origin).origin.toLowerCase();
+  } catch (error) {
+    return String(origin).trim().toLowerCase().replace(/\/+$/, '');
+  }
+}
+
+const allowedOriginsSet = new Set(allowedOrigins.map(normalizeOrigin).filter(Boolean));
+
+function isOriginAllowed(origin) {
+  const normalized = normalizeOrigin(origin);
+  if (!normalized) return true;
+  if (allowedOriginsSet.has(normalized)) return true;
+
+  try {
+    const { hostname } = new URL(normalized);
+    return envAllowedOriginSuffixes.some((suffix) => (
+      hostname === suffix || hostname.endsWith(`.${suffix}`)
+    ));
+  } catch (error) {
+    return false;
+  }
+}
 
 const corsMiddleware = cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, Postman)
     if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
+    console.warn(`[CORS] Origin blocked: ${origin}`);
     return callback(new Error('CORS: Origin tidak diizinkan'), false);
   },
   credentials: true,
