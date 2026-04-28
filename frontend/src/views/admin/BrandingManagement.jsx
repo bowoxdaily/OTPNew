@@ -24,6 +24,15 @@ import DashboardCard from 'src/components/shared/DashboardCard';
 import { apiFetch, readJsonSafe } from 'src/utils/apiClient';
 import { useBranding } from 'src/contexts/BrandingContext';
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+
+function resolveAssetUrl(url) {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (API_BASE_URL) return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  return url;
+}
+
 const BrandingManagement = () => {
   const { refreshBranding, branding: liveBranding } = useBranding();
   const [branding, setBranding] = useState({
@@ -61,8 +70,8 @@ const BrandingManagement = () => {
 
       if (data?.success && data?.data) {
         setBranding((prev) => ({ ...prev, ...data.data }));
-        if (data.data.logo_url) setLogoPreview(data.data.logo_url);
-        if (data.data.favicon_url) setFaviconPreview(data.data.favicon_url);
+        if (data.data.logo_url) setLogoPreview(resolveAssetUrl(data.data.logo_url));
+        if (data.data.favicon_url) setFaviconPreview(resolveAssetUrl(data.data.favicon_url));
       }
     } catch (err) {
       console.error('Error fetching branding:', err);
@@ -111,8 +120,8 @@ const BrandingManagement = () => {
         const urlField = isLogo ? 'logo_url' : 'favicon_url';
         setBranding((prev) => ({ ...prev, [urlField]: data.data.url }));
 
-        if (isLogo) setLogoPreview(data.data.url);
-        else setFaviconPreview(data.data.url);
+        if (isLogo) setLogoPreview(resolveAssetUrl(data.data.url));
+        else setFaviconPreview(resolveAssetUrl(data.data.url));
 
         await refreshBranding();
         showSnackbar(`${isLogo ? 'Logo' : 'Favicon'} berhasil diupload!`);

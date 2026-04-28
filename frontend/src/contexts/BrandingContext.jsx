@@ -4,6 +4,22 @@ import { apiFetch, readJsonSafe } from 'src/utils/apiClient';
 import typography from 'src/theme/Typography';
 import { shadows } from 'src/theme/Shadows';
 
+const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\/+$/, '');
+
+/**
+ * Resolve relative asset URLs (e.g. /uploads/branding/logo.png) to the full
+ * backend URL so they load correctly in production where frontend and backend
+ * are on different domains.
+ */
+function resolveAssetUrl(url) {
+  if (!url) return url;
+  // Already absolute — leave as-is
+  if (/^https?:\/\//i.test(url)) return url;
+  // Relative path — prefix with API base URL
+  if (API_BASE_URL) return `${API_BASE_URL}${url.startsWith('/') ? '' : '/'}${url}`;
+  return url;
+}
+
 const defaultBranding = {
   brand_name: 'OTP Reseller',
   brand_tagline: 'Platform Reseller OTP Terpercaya',
@@ -22,20 +38,37 @@ export const BrandingProvider = ({ children }) => {
   const [branding, setBranding] = useState(defaultBranding);
   const [loading, setLoading] = useState(true);
 
-  const fetchBranding = async () => {
+  const fetchBranding = async (retryCount = 0) => {
     try {
       const response = await apiFetch('/api/admin/branding');
+
+      // Handle rate limiting silently — just use defaults
+      if (response.status === 429) {
+        console.warn('[Branding] Rate limited, using cached/default branding');
+        return;
+      }
+
       const data = await readJsonSafe(response);
       if (data?.success && data?.data) {
-        setBranding((prev) => ({ ...prev, ...data.data }));
-        if (data.data.favicon_url) {
-          updateFavicon(data.data.favicon_url);
+        // Resolve relative asset URLs to full backend URL
+        const resolved = { ...data.data };
+        if (resolved.logo_url) resolved.logo_url = resolveAssetUrl(resolved.logo_url);
+        if (resolved.favicon_url) resolved.favicon_url = resolveAssetUrl(resolved.favicon_url);
+
+        setBranding((prev) => ({ ...prev, ...resolved }));
+        if (resolved.favicon_url) {
+          updateFavicon(resolved.favicon_url);
         }
         if (data.data.brand_name) {
           document.title = data.data.brand_name;
         }
       }
     } catch (error) {
+      // Network error — retry once after 2s
+      if (retryCount < 1) {
+        setTimeout(() => fetchBranding(retryCount + 1), 2000);
+        return;
+      }
       console.error('Error fetching branding:', error);
     } finally {
       setLoading(false);

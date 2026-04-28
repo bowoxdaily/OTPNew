@@ -32,7 +32,20 @@ app.use(corsMiddleware);         // CORS whitelist
 // Explicit preflight handler — guarantees 204 for OPTIONS even behind
 // Nginx/Apache reverse proxies that sometimes swallow the cors() response.
 app.options('*', corsMiddleware);
-app.use(generalLimiter);         // Rate limiting (200 req / 15 min)
+// Rate limiting applied selectively — public read-only endpoints
+// (branding, health, static uploads) are exempt to prevent
+// "Terlalu banyak request" errors on every page load.
+app.use((req, res, next) => {
+  // Skip rate-limit for public read-only endpoints
+  const exempt =
+    req.method === 'OPTIONS' ||
+    req.path === '/health' ||
+    req.path === '/ready' ||
+    req.path.startsWith('/uploads') ||
+    (req.method === 'GET' && req.path === '/api/admin/branding');
+  if (exempt) return next();
+  return generalLimiter(req, res, next);
+});
 app.disable('x-powered-by');     // Hide Express fingerprint
 
 // ── Body Parsing (with size limits) ──────────────────────
