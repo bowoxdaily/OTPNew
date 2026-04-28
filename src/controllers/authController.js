@@ -222,10 +222,17 @@ async function updateProfile(req, res, next) {
       }
     }
 
-    const updateData = { updated_at: new Date().toISOString() };
+    const updateData = {};
     if (cleanName) updateData.name = cleanName;
     if (cleanEmail) updateData.email = cleanEmail;
     if (cleanPhone) updateData.phone = cleanPhone;
+
+    // Nothing to update
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({ success: false, message: 'Tidak ada data yang diperbarui' });
+    }
+
+    updateData.updated_at = new Date().toISOString();
 
     const { supabase } = require('../services/supabaseClient');
     const { data, error } = await supabase
@@ -268,7 +275,6 @@ async function changePassword(req, res, next) {
       return res.status(400).json({ success: false, message: passwordError });
     }
 
-    const { hashPassword } = require('../store/usersStore');
     const { supabase } = require('../services/supabaseClient');
     const crypto = require('crypto');
     const salt = crypto.randomBytes(16).toString('hex');
