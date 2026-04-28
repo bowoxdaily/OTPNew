@@ -151,7 +151,12 @@ const Topup = () => {
     return () => clearInterval(timer);
   }, [activeOrderId, paidNotified]);
 
-  const hasPending = history.some(item => item.status === 'pending');
+  // Topup dianggap pending jika status=pending DAN countdown belum habis
+  // Jika countdown = 0 secara lokal, treat sebagai expired meski DB belum update
+  const hasPending = history.some(item => item.status === 'pending') && countdown !== 0;
+
+  // Topup pending yang countdown-nya sudah 0 (menunggu cron update DB)
+  const isExpiredLocally = countdown === 0 && history.some(item => item.status === 'pending');
 
   const formatCountdown = (secs) => {
     if (secs === null) return '';
@@ -164,9 +169,6 @@ const Topup = () => {
     : countdown < 60 ? 'error.main'
     : countdown < 300 ? 'warning.main'
     : 'success.main';
-
-  // Jika countdown habis (0) dan masih ada pending, tampilkan pesan
-  const isExpiredLocally = countdown === 0 && hasPending;
 
   return (
     <PageContainer title="Top Up Saldo" description="Isi ulang saldo via GoPay">
@@ -230,8 +232,8 @@ const Topup = () => {
                     </Alert>
                   )}
 
-                  {/* Tombol lanjut bayar jika ada order aktif tapi QRIS ditutup */}
-                  {activeOrderId && !hasPending && countdown !== null && (
+                  {/* Tombol lanjut bayar jika QRIS ditutup & masih ada pending & belum expired */}
+                  {activeOrderId && countdown !== null && countdown > 0 && (
                     <Button
                       variant="outlined"
                       color="warning"
@@ -239,7 +241,7 @@ const Topup = () => {
                       size="large"
                       sx={{ mb: 1.5 }}
                       onClick={() => {
-                        const pending = history.find(i => i.id === activeOrderId);
+                        const pending = history.find(i => i.id === activeOrderId || i.status === 'pending');
                         if (pending) handleResumePayment(pending);
                       }}
                     >
@@ -349,9 +351,10 @@ const Topup = () => {
                                 size="small" 
                                 color="primary" 
                                 onClick={() => handleResumePayment(item)}
-                                disabled={activeOrderId === item.id}
+                                // Tampilkan 'Menunggu...' hanya jika QRIS sedang terbuka untuk item ini
+                                disabled={activeOrderId === item.id && !!paymentUrl}
                               >
-                                {activeOrderId === item.id ? 'Menunggu...' : 'Bayar'}
+                                {activeOrderId === item.id && paymentUrl ? 'Menunggu...' : 'Bayar'}
                               </Button>
                             )}
                           </TableCell>
