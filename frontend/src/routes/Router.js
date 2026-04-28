@@ -28,6 +28,7 @@ const Error = Loadable(lazy(() => import('../views/authentication/Error')));
 const Register = Loadable(lazy(() => import('../views/authentication/Register')));
 const Login = Loadable(lazy(() => import('../views/authentication/Login')));
 const Profile = Loadable(lazy(() => import('../views/user/Profile')));
+const LandingPage = Loadable(lazy(() => import('../views/landing/LandingPage')));
 
 const RequireAuth = ({ children }) => {
   const session = getUserSession();
@@ -46,94 +47,16 @@ const RequireRole = ({ role, children }) => {
 };
 
 const Router = [
+  // ── Landing Page — public, no sidebar ──
   {
     path: '/',
-    element: <FullLayout />,
+    element: <BlankLayout />,
     children: [
-      { path: '/', element: <Navigate to="/dashboard/user" /> },
-      { path: '/dashboard', element: <Navigate to="/dashboard/user" /> },
-      {
-        path: '/dashboard/admin',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><AdminDashboard /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/admin/markups',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><MarkupManagement /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/admin/layanan',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><AdminLayanan /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/admin/branding',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><BrandingManagement /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/admin/topup',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><AdminTopup /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/admin/payment-gateway',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><PaymentGatewaySettings /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/admin/orders',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><AdminOrders /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/dashboard/user',
-        exact: true,
-        element: <RequireAuth><RequireRole role="user"><UserDashboard /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/otp/beli-nomor',
-        exact: true,
-        element: <RequireAuth><RequireRole role="user"><BeliNomor /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/otp/cek-otp',
-        exact: true,
-        element: <RequireAuth><RequireRole role="user"><CekOtp /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/user/topup',
-        exact: true,
-        element: <RequireAuth><RequireRole role="user"><Topup /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/otp/mutasi-saldo',
-        exact: true,
-        element: <RequireAuth><RequireRole role="user"><MutasiSaldo /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/otp/status-provider',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><AdminDashboard /></RequireRole></RequireAuth>,
-      },
-      {
-        path: '/otp/dokumentasi-api',
-        exact: true,
-        element: <RequireAuth><RequireRole role="admin"><AdminDashboard /></RequireRole></RequireAuth>,
-      },
-      { path: '/sample-page', exact: true, element: <SamplePage /> },
-      { path: '/icons', exact: true, element: <Icons /> },
-      { path: '/ui/typography', exact: true, element: <TypographyPage /> },
-      { path: '/ui/shadow', exact: true, element: <Shadow /> },
-      {
-        path: '/profile',
-        exact: true,
-        element: <RequireAuth><Profile /></RequireAuth>,
-      },
-      { path: '*', element: <Navigate to="/auth/404" /> },
+      { index: true, element: <LandingPage /> },
     ],
   },
+
+  // ── Auth pages — no sidebar ──
   {
     path: '/auth',
     element: <BlankLayout />,
@@ -141,9 +64,71 @@ const Router = [
       { path: '404', element: <Error /> },
       { path: '/auth/register', element: <Register /> },
       { path: '/auth/login', element: <Login /> },
-      { path: '*', element: <Navigate to="/auth/404" /> },
+      { path: '*', element: <Navigate to="/auth/404" replace /> },
+    ],
+  },
+
+  // ── App pages — with sidebar + header ──
+  {
+    path: '/',
+    element: <FullLayout />,
+    children: [
+      { path: '/dashboard', element: <Navigate to="/dashboard/user" replace /> },
+      {
+        path: '/dashboard/admin',
+        element: <RequireAuth><RequireRole role="admin"><AdminDashboard /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/admin/markups',
+        element: <RequireAuth><RequireRole role="admin"><MarkupManagement /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/admin/layanan',
+        element: <RequireAuth><RequireRole role="admin"><AdminLayanan /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/admin/branding',
+        element: <RequireAuth><RequireRole role="admin"><BrandingManagement /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/admin/topup',
+        element: <RequireAuth><RequireRole role="admin"><AdminTopup /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/admin/payment-gateway',
+        element: <RequireAuth><RequireRole role="admin"><PaymentGatewaySettings /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/admin/orders',
+        element: <RequireAuth><RequireRole role="admin"><AdminOrders /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/dashboard/user',
+        element: <RequireAuth><RequireRole role="user"><UserDashboard /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/otp/beli-nomor',
+        element: <RequireAuth><RequireRole role="user"><BeliNomor /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/otp/cek-otp',
+        element: <RequireAuth><RequireRole role="user"><CekOtp /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/user/topup',
+        element: <RequireAuth><RequireRole role="user"><Topup /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/otp/mutasi-saldo',
+        element: <RequireAuth><RequireRole role="user"><MutasiSaldo /></RequireRole></RequireAuth>,
+      },
+      {
+        path: '/profile',
+        element: <RequireAuth><Profile /></RequireAuth>,
+      },
     ],
   },
 ];
+
 
 export default Router;

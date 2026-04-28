@@ -2,18 +2,60 @@ const { supabase } = require('./supabaseClient');
 const { cancelOrder } = require('./providerService');
 const { atomicRefundBalance } = require('../store/usersStore');
 const { updateOrderStatus } = require('../store/ordersStore');
+const { updateTopupStatus } = require('../store/topupStore');
+
+// ── Konstanta waktu ──────────────────────────────────────
+const TOPUP_EXPIRY_MS   = 20 * 60 * 1000; // 20 menit
+const ORDER_EXPIRY_MS   = 20 * 60 * 1000; // 20 menit (sama)
 
 let autoCancelInterval = null;
 
-// Ambil order yang statusnya pending/waiting dan umurnya > 20 menit
+// ── Topup: Ambil pending > 20 menit ──────────────────────
+async function getExpiredPendingTopups() {
+  const cutoff = new Date(Date.now() - TOPUP_EXPIRY_MS).toISOString();
+  const { data, error } = await supabase
+    .from('topups')
+    .select('id, user_id, amount, created_at')
+    .eq('status', 'pending')
+    .lt('created_at', cutoff);
+
+  if (error) {
+    console.error('[CRON] Failed to fetch expired topups:', error.message);
+    return [];
+  }
+  return data || [];
+}
+
+// ── Topup: Auto-cancel expired ───────────────────────────
+async function cancelExpiredTopups() {
+  try {
+    const expired = await getExpiredPendingTopups();
+    if (!expired.length) return;
+
+    console.log(`[CRON] 🔴 Ditemukan ${expired.length} topup expired (> 20 menit). Auto-cancel...`);
+
+    for (const topup of expired) {
+      try {
+        await updateTopupStatus(topup.id, 'expired');
+        console.log(`[CRON] ✅ Topup ${topup.id} (User: ${topup.user_id}, Rp ${Number(topup.amount).toLocaleString('id-ID')}) → expired`);
+      } catch (err) {
+        console.error(`[CRON] ❌ Gagal expire topup ${topup.id}:`, err.message);
+      }
+    }
+  } catch (err) {
+    console.error('[CRON] Error in cancelExpiredTopups:', err.message);
+  }
+}
+
+// ── Orders: Ambil pending > 20 menit ─────────────────────
 async function getExpiredPendingOrders() {
-  const twentyMinutesAgo = new Date(Date.now() - 20 * 60 * 1000).toISOString();
+  const cutoff = new Date(Date.now() - ORDER_EXPIRY_MS).toISOString();
 
   const { data, error } = await supabase
     .from('orders')
     .select('*')
     .in('status', ['pending', 'waiting'])
-    .lt('created_at', twentyMinutesAgo);
+    .lt('created_at', cutoff);
 
   if (error) {
     console.error('[CRON] Failed to fetch expired orders:', error.message);
@@ -69,13 +111,21 @@ async function processAutoCancel() {
 }
 
 function startCronJobs() {
-  console.log('[CRON] 🕒 Cron jobs started (Auto-cancel pending orders setiap 5 menit)');
-  
-  // Run immediately on start
-  setTimeout(processAutoCancel, 10000); // Tunggu 10 detik setelah start
+  console.log('[CRON] 🕒 Cron jobs started:');
+  console.log('       - Auto-cancel pending ORDERS  > 20 menit (setiap 5 menit)');
+  console.log('       - Auto-cancel pending TOPUPS  > 20 menit (setiap 5 menit)');
 
-  // Jalankan setiap 5 menit (300.000 ms)
-  autoCancelInterval = setInterval(processAutoCancel, 5 * 60 * 1000);
+  // Jalankan setelah 10 detik warm-up
+  setTimeout(() => {
+    processAutoCancel();
+    cancelExpiredTopups();
+  }, 10_000);
+
+  // Setiap 5 menit
+  autoCancelInterval = setInterval(() => {
+    processAutoCancel();
+    cancelExpiredTopups();
+  }, 5 * 60 * 1000);
 }
 
 function stopCronJobs() {
