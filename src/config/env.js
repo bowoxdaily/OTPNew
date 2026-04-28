@@ -12,6 +12,8 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const telegramBotToken = process.env.TELEGRAM_BOT_TOKEN || '';
 const telegramChatId = process.env.TELEGRAM_CHAT_ID || '';
 const corsAllowedOrigins = process.env.CORS_ALLOWED_ORIGINS || '';
+const scraperFileMaxAgeMs = Number(process.env.SCRAPER_FILE_MAX_AGE_MS || 10 * 60 * 1000);
+const shutdownTimeoutMs = Number(process.env.SHUTDOWN_TIMEOUT_MS || 15000);
 
 function parseTrustProxy(value) {
   if (value === undefined || value === null || value === '') return 1;
@@ -47,6 +49,8 @@ module.exports = {
   telegramBotToken,
   telegramChatId,
   corsAllowedOrigins,
+  scraperFileMaxAgeMs,
+  shutdownTimeoutMs,
   trustProxy,
   supabaseUrl,
   supabaseServiceRoleKey,

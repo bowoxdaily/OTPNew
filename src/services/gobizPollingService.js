@@ -17,6 +17,7 @@ const { supabase } = require('./supabaseClient');
 const { updateTopupStatus } = require('../store/topupStore');
 const { atomicRefundBalance, findById } = require('../store/usersStore');
 const { sendTopupSuccessNotification } = require('./telegramNotificationService');
+const { scraperFileMaxAgeMs } = require('../config/env');
 
 // ── Config ──────────────────────────────────────────────
 const POLLING_INTERVAL = Number(process.env.GOBIZ_POLLING_INTERVAL || 30000);
@@ -33,8 +34,11 @@ const SUBSCRIBER_TOKEN = process.env.SUBSCRIBER_TOKEN || '';
 const SUBSCRIBER_SECRET = process.env.SUBSCRIBER_SECRET || '';
 
 let pollingTimer = null;
+let pollingHealthTimer = null;
 let isPolling = false;
 const processedTransactionIds = new Set();
+let lastPollAt = null;
+let staleWarningEmitted = false;
 
 // ── File-based Polling ──────────────────────────────────
 
@@ -83,6 +87,7 @@ async function getPendingTopups() {
 async function matchAndApproveTopups() {
   if (isPolling) return;
   isPolling = true;
+  lastPollAt = new Date().toISOString();
 
   try {
     const pendingTopups = await getPendingTopups();
@@ -141,6 +146,35 @@ async function matchAndApproveTopups() {
   } finally {
     isPolling = false;
   }
+}
+
+function getPollingStatus() {
+  const exists = fs.existsSync(SCRAPER_TRANSACTIONS_FILE);
+  let fileUpdatedAt = null;
+  let fileAgeMs = null;
+  let isFileStale = true;
+
+  if (exists) {
+    try {
+      const stat = fs.statSync(SCRAPER_TRANSACTIONS_FILE);
+      fileUpdatedAt = stat.mtime.toISOString();
+      fileAgeMs = Date.now() - stat.mtimeMs;
+      isFileStale = fileAgeMs > scraperFileMaxAgeMs;
+    } catch (error) {
+      isFileStale = true;
+    }
+  }
+
+  return {
+    running: Boolean(pollingTimer),
+    isPolling,
+    lastPollAt,
+    fileExists: exists,
+    fileUpdatedAt,
+    fileAgeMs,
+    isFileStale,
+    maxAllowedAgeMs: scraperFileMaxAgeMs,
+  };
 }
 
 // ── Gateway Subscriber Registration ─────────────────────
@@ -210,6 +244,18 @@ function startPolling() {
   // Start file polling setelah 5 detik
   setTimeout(() => matchAndApproveTopups(), 5000);
   pollingTimer = setInterval(matchAndApproveTopups, POLLING_INTERVAL);
+  pollingHealthTimer = setInterval(() => {
+    const status = getPollingStatus();
+    if (status.isFileStale && !staleWarningEmitted) {
+      staleWarningEmitted = true;
+      console.error(
+        `[GoBiz Poll] ⚠️ transactions file stale. ageMs=${status.fileAgeMs || 'unknown'} maxAgeMs=${status.maxAllowedAgeMs}`
+      );
+    }
+    if (!status.isFileStale) {
+      staleWarningEmitted = false;
+    }
+  }, Math.max(30000, Math.floor(POLLING_INTERVAL)));
 }
 
 function stopPolling() {
@@ -218,10 +264,15 @@ function stopPolling() {
     pollingTimer = null;
     console.log('[GoBiz Integration] 🛑 Stopped');
   }
+  if (pollingHealthTimer) {
+    clearInterval(pollingHealthTimer);
+    pollingHealthTimer = null;
+  }
 }
 
 module.exports = {
   startPolling,
   stopPolling,
   matchAndApproveTopups,
+  getPollingStatus,
 };

@@ -6,10 +6,11 @@ const markupRoutes = require('./routes/markupRoutes');
 const brandingRoutes = require('./routes/brandingRoutes');
 const paymentRoutes = require('./routes/paymentRoutes');
 const paymentGatewaySettingsRoutes = require('./routes/paymentGatewaySettingsRoutes');
-const { port, authSecret, trustProxy } = require('./config/env');
-const { startPolling } = require('./services/gobizPollingService');
+const { port, authSecret, trustProxy, shutdownTimeoutMs } = require('./config/env');
+const { startPolling, stopPolling, getPollingStatus } = require('./services/gobizPollingService');
 const { startCronJobs } = require('./services/cronService');
 const { ensureSeedUsers } = require('./store/usersStore');
+const { supabase } = require('./services/supabaseClient');
 const {
   helmetMiddleware,
   corsMiddleware,
@@ -18,6 +19,8 @@ const {
 } = require('./middlewares/securityMiddleware');
 
 const app = express();
+let server = null;
+let isShuttingDown = false;
 
 // App runs behind Nginx/aaPanel in production, so trust proxy headers for real client IP.
 app.set('trust proxy', trustProxy);
@@ -51,7 +54,50 @@ app.use('/uploads', express.static('uploads'));
 
 // ── Health Check ─────────────────────────────────────────
 app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'ok' });
+  res.status(200).json({ status: 'ok', shutting_down: isShuttingDown });
+});
+
+app.get('/ready', async (req, res) => {
+  if (isShuttingDown) {
+    return res.status(503).json({
+      status: 'not_ready',
+      reason: 'Server is shutting down',
+    });
+  }
+
+  try {
+    const pollingStatus = getPollingStatus();
+    const { error } = await supabase
+      .from('users')
+      .select('id')
+      .limit(1);
+
+    if (error) {
+      return res.status(503).json({
+        status: 'not_ready',
+        reason: `Database check failed: ${error.message}`,
+        polling: pollingStatus,
+      });
+    }
+
+    if (pollingStatus.isFileStale) {
+      return res.status(503).json({
+        status: 'not_ready',
+        reason: 'GoBiz transactions file is stale',
+        polling: pollingStatus,
+      });
+    }
+
+    return res.status(200).json({
+      status: 'ready',
+      polling: pollingStatus,
+    });
+  } catch (error) {
+    return res.status(503).json({
+      status: 'not_ready',
+      reason: error.message || 'Unexpected readiness check failure',
+    });
+  }
 });
 
 // ── API Routes ───────────────────────────────────────────
@@ -108,6 +154,34 @@ process.on('uncaughtException', (error) => {
   process.exit(1);
 });
 
+function shutdown(signal) {
+  if (isShuttingDown) return;
+  isShuttingDown = true;
+  console.log(`[SHUTDOWN] Received ${signal}. Closing server...`);
+
+  stopPolling();
+
+  const forceExitTimer = setTimeout(() => {
+    console.error(`[SHUTDOWN] Force exit after ${shutdownTimeoutMs}ms`);
+    process.exit(1);
+  }, shutdownTimeoutMs);
+
+  if (server) {
+    server.close(() => {
+      clearTimeout(forceExitTimer);
+      console.log('[SHUTDOWN] HTTP server closed gracefully');
+      process.exit(0);
+    });
+    return;
+  }
+
+  clearTimeout(forceExitTimer);
+  process.exit(0);
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+
 // ── Server Startup ───────────────────────────────────────
 async function startServer() {
   // Validate auth secret is not default
@@ -121,7 +195,7 @@ async function startServer() {
 
   try {
     await ensureSeedUsers();
-    app.listen(port, () => {
+    server = app.listen(port, () => {
       console.log(`OTP Reseller API running on port ${port}`);
       console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 
