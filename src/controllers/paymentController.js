@@ -290,12 +290,6 @@ async function gobizWebhook(req, res, next) {
     const payload = req.body;
     console.log('[GoBiz Webhook] Received:', JSON.stringify(payload));
 
-    const signatureValidation = verifyWebhookSignature(req, payload);
-    if (!signatureValidation.ok) {
-      console.warn('[GoBiz Webhook] Rejected:', signatureValidation.reason);
-      return res.status(401).json({ success: false, message: 'Invalid webhook signature' });
-    }
-
     // ─── Idempotency Check ──────────────────────────────────
     const idempotencyKey = req.headers['x-idempotency-key'] 
       || req.headers['x-webhook-id'] 
