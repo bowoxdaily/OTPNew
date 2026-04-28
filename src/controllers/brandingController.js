@@ -155,7 +155,7 @@ async function updateBrandingSettings(req, res, next) {
 }
 
 /**
- * Upload branding file (logo or favicon)
+ * Upload branding file (logo or favicon) to Supabase Storage
  */
 async function uploadBrandingFile(req, res, next) {
   try {
@@ -181,30 +181,49 @@ async function uploadBrandingFile(req, res, next) {
       return res.status(400).json({ success: false, message: 'File bukan gambar yang valid (PNG, JPG, atau ICO)' });
     }
 
-    // Create uploads directory if it doesn't exist
-    const uploadsDir = path.join(__dirname, '../../uploads/branding');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
+    // Ensure the 'branding' bucket exists (public so images can be loaded by browser)
+    const BUCKET = 'branding';
+    const { data: buckets } = await supabase.storage.listBuckets();
+    const bucketExists = buckets?.some(b => b.name === BUCKET);
+    if (!bucketExists) {
+      const { error: createErr } = await supabase.storage.createBucket(BUCKET, {
+        public: true,
+        fileSizeLimit: 2 * 1024 * 1024,
+        allowedMimeTypes: ['image/png', 'image/jpeg', 'image/x-icon'],
+      });
+      if (createErr) {
+        console.error('Failed to create storage bucket:', createErr.message);
+        return res.status(500).json({ success: false, message: 'Gagal membuat storage bucket' });
+      }
+      console.log(`[Branding] Created Supabase Storage bucket: ${BUCKET}`);
     }
 
-    // SECURITY: Generate safe filename (no user input in filename)
+    // Generate safe filename
     const timestamp = Date.now();
-    const safeOriginalName = sanitizeFilename(file.name);
-    const filename = `${type}-${timestamp}-${safeOriginalName}`;
-    const filepath = path.join(uploadsDir, filename);
+    const ext = detectedType === 'image/png' ? 'png' : detectedType === 'image/jpeg' ? 'jpg' : 'ico';
+    const filename = `${type}-${timestamp}.${ext}`;
+    const storagePath = `${filename}`;
 
-    // SECURITY: Verify filepath is within uploads directory (prevent path traversal)
-    const resolvedPath = path.resolve(filepath);
-    const resolvedUploadsDir = path.resolve(uploadsDir);
-    if (!resolvedPath.startsWith(resolvedUploadsDir)) {
-      return res.status(400).json({ success: false, message: 'Path file tidak valid' });
+    // Upload to Supabase Storage (upsert to overwrite if same name)
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(storagePath, file.data, {
+        contentType: detectedType,
+        upsert: true,
+      });
+
+    if (uploadError) {
+      console.error('Supabase Storage upload error:', uploadError.message);
+      return res.status(500).json({ success: false, message: 'Gagal upload file ke storage' });
     }
 
-    // Save file
-    await file.mv(filepath);
+    // Get public URL
+    const { data: urlData } = supabase.storage
+      .from(BUCKET)
+      .getPublicUrl(storagePath);
 
-    // Build URL
-    const fileUrl = `/uploads/branding/${filename}`;
+    const fileUrl = urlData.publicUrl;
+    console.log(`[Branding] Uploaded ${type}: ${fileUrl}`);
 
     // Update branding in database
     const updateData = {
@@ -231,14 +250,7 @@ async function uploadBrandingFile(req, res, next) {
         .upsert([insertPayload], { onConflict: 'id' });
 
       if (insertError) {
-        console.warn('Supabase error:', insertError);
-        // Update cache anyway
-        brandingCache[`${type}_url`] = fileUrl;
-        return res.json({
-          success: true,
-          data: { url: fileUrl },
-          message: `${type} berhasil diupload (cached)`,
-        });
+        console.warn('Supabase DB error:', insertError.message);
       }
     }
 
