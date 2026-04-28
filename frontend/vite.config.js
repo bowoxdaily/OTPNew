@@ -8,57 +8,57 @@ import svgr from '@svgr/rollup';
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
     const env = loadEnv(mode, process.cwd(), '');
-    const devProxyTarget = env.VITE_DEV_PROXY_TARGET || 'http://127.0.0.1:3002';
+    const devProxyTarget = env.VITE_DEV_PROXY_TARGET || 'https://api.bitnexid.com';
 
     return {
-    resolve: {
-        alias: {
-            src: resolve(__dirname, 'src'),
+        resolve: {
+            alias: {
+                src: resolve(__dirname, 'src'),
+            },
         },
-    },
-    esbuild: {
-        loader: 'jsx',
-        include: /src\/.*\.jsx?$/,
-        exclude: [],
-    },
-    optimizeDeps: {
-        esbuildOptions: {
-            plugins: [
-                {
-                    name: 'load-js-files-as-jsx',
-                    setup(build) {
-                        build.onLoad(
-                            { filter: /src\\.*\.js$/ },
-                            async (args) => ({
-                                loader: 'jsx',
-                                contents: await fs.readFile(args.path, 'utf8'),
-                            })
-                        );
+        esbuild: {
+            loader: 'jsx',
+            include: /src\/.*\.jsx?$/,
+            exclude: [],
+        },
+        optimizeDeps: {
+            esbuildOptions: {
+                plugins: [
+                    {
+                        name: 'load-js-files-as-jsx',
+                        setup(build) {
+                            build.onLoad(
+                                { filter: /src\\.*\.js$/ },
+                                async (args) => ({
+                                    loader: 'jsx',
+                                    contents: await fs.readFile(args.path, 'utf8'),
+                                })
+                            );
+                        },
                     },
+                ],
+            },
+        },
+
+
+
+        // plugins: [react(),svgr({
+        //   exportAsDefault: true
+        // })],
+
+        plugins: [svgr(), react()],
+        base: '/',
+        server: {
+            proxy: {
+                '/api': {
+                    target: devProxyTarget,
+                    changeOrigin: true,
                 },
-            ],
-        },
-    },
-
-
-    
-    // plugins: [react(),svgr({
-    //   exportAsDefault: true
-    // })],
-
-    plugins: [svgr(), react()],
-    base: '/',
-    server: {
-        proxy: {
-            '/api': {
-                target: devProxyTarget,
-                changeOrigin: true,
-            },
-            '/uploads': {
-                target: devProxyTarget,
-                changeOrigin: true,
+                '/uploads': {
+                    target: devProxyTarget,
+                    changeOrigin: true,
+                },
             },
         },
-    },
-};
+    };
 });

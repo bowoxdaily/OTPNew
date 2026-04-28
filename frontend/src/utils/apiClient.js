@@ -5,6 +5,7 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '').trim().replace(/\
 function buildApiUrl(url) {
   if (typeof url !== 'string') return url;
   if (/^https?:\/\//i.test(url) || !API_BASE_URL) return url;
+  if (API_BASE_URL.startsWith('/') && url.startsWith(API_BASE_URL)) return url;
   if (url.startsWith('/')) return `${API_BASE_URL}${url}`;
   return `${API_BASE_URL}/${url}`;
 }

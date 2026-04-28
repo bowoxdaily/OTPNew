@@ -28,6 +28,10 @@ app.set('trust proxy', trustProxy);
 // ── Security Middleware ───────────────────────────────────
 app.use(helmetMiddleware);       // Security headers (XSS, clickjacking, etc.)
 app.use(corsMiddleware);         // CORS whitelist
+
+// Explicit preflight handler — guarantees 204 for OPTIONS even behind
+// Nginx/Apache reverse proxies that sometimes swallow the cors() response.
+app.options('*', corsMiddleware);
 app.use(generalLimiter);         // Rate limiting (200 req / 15 min)
 app.disable('x-powered-by');     // Hide Express fingerprint
 

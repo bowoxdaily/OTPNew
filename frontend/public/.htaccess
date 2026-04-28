@@ -1,0 +1,8 @@
+RewriteEngine On
+
+# Jangan rewrite file atau folder yang sudah ada
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+
+# SPA fallback: arahkan semua route ke index.html
+RewriteRule ^ index.html [L]
