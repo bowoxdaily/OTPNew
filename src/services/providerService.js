@@ -36,6 +36,18 @@ async function sendRequest(action, params = {}) {
     const statusCode = error.response?.status || 502;
     const details = error.response?.data || error.message;
 
+    console.error('[PROVIDER_API_ERROR]', {
+      action,
+      statusCode,
+      code: error.code,
+      message: error.message,
+      responseData: error.response?.data,
+      responseHeaders: error.response?.headers,
+      requestUrl: error.config?.url,
+      requestMethod: error.config?.method,
+      requestBaseURL: error.config?.baseURL,
+    });
+
     throw Object.assign(new Error('Gagal menghubungi API provider'), {
       statusCode,
       details,
