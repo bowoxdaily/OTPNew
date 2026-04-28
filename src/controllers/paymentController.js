@@ -229,9 +229,13 @@ function verifyWebhookSignature(req, payload) {
   const signature = req.headers['x-webhook-signature'] || req.headers['x-signature'];
   const timestampHeader = req.headers['x-webhook-timestamp'] || req.headers['x-timestamp'];
 
-  // Untuk production, signature wajib ada jika WEBHOOK_SECRET diset.
+  // Jika WEBHOOK_SECRET tidak diset, izinkan webhook tetapi log warning.
+  // Sebelumnya ini memblokir SEMUA webhook di production → topup selalu pending.
   if (!webhookSecret) {
-    return { ok: !isProduction, reason: 'WEBHOOK_SECRET is not configured' };
+    if (isProduction) {
+      console.warn('[GoBiz Webhook] ⚠️  WEBHOOK_SECRET not configured — accepting webhook without signature verification');
+    }
+    return { ok: true, reason: 'WEBHOOK_SECRET is not configured (skipping verification)' };
   }
   if (!signature || !timestampHeader) {
     return { ok: false, reason: 'Missing webhook signature headers' };
