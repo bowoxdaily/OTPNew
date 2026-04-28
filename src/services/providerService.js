@@ -4,6 +4,14 @@ const { providerApiKey, providerBaseUrl } = require('../config/env');
 const providerClient = axios.create({
   baseURL: providerBaseUrl,
   timeout: 15000,
+  headers: {
+    'Accept': 'application/json, text/plain, */*',
+    'Content-Type': 'application/json',
+    'User-Agent': 'OTP-Reseller/1.0',
+    'X-Requested-With': 'XMLHttpRequest',
+    'Cache-Control': 'no-cache',
+    'Pragma': 'no-cache',
+  },
 });
 
 // Cache countries mapping ID -> name
