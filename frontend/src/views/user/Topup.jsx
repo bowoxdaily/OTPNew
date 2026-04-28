@@ -32,10 +32,21 @@ const Topup = () => {
   const [historyLoading, setHistoryLoading] = useState(true);
   const [activeOrderId, setActiveOrderId] = useState('');
   const [paidNotified, setPaidNotified] = useState(false);
-  const [topupCreatedAt, setTopupCreatedAt] = useState(null);
-  const [countdown, setCountdown] = useState(null); // seconds remaining
+  const [tick, setTick] = useState(0); // forces re-render setiap detik
 
-  const EXPIRY_SECONDS = 20 * 60; // 20 menit
+  const EXPIRY_MS = 20 * 60 * 1000; // 20 menit dalam ms
+
+  // Hitung sisa detik dari created_at topup pending (real-time, tidak hilang saat unmount)
+  const activePendingTopup = history.find(i => i.status === 'pending');
+  const countdown = activePendingTopup
+    ? Math.max(0, Math.floor((new Date(activePendingTopup.created_at).getTime() + EXPIRY_MS - Date.now()) / 1000))
+    : null;
+
+  // Tick setiap detik agar countdown ter-render ulang
+  useEffect(() => {
+    const t = setInterval(() => setTick(n => n + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     fetchHistory();
@@ -75,12 +86,9 @@ const Topup = () => {
       if (res.ok && data.success) {
         setSuccessMsg(`Rp ${data.data.amount}`);
         setActiveOrderId(data.data.order_id || data.data.id || '');
-        setTopupCreatedAt(new Date().toISOString());
-        setCountdown(EXPIRY_SECONDS);
-
+        // Tidak perlu set countdown — dihitung otomatis dari created_at
         const url = data.data.actions?.find(a => a.name === 'generate-qr-code')?.url;
         if (url) setPaymentUrl(url);
-
         setAmount('');
         fetchHistory();
       } else {
@@ -102,6 +110,14 @@ const Topup = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  // Restore activeOrderId dari history saat mount (setelah navigasi)
+  useEffect(() => {
+    if (!activeOrderId && history.length > 0) {
+      const pending = history.find(i => i.status === 'pending');
+      if (pending) setActiveOrderId(pending.id);
+    }
+  }, [history]);
+
   useEffect(() => {
     if (!activeOrderId || paidNotified) return undefined;
 
@@ -119,12 +135,10 @@ const Topup = () => {
         if (activeTopup.status === 'success') {
           setPaidNotified(true);
           setPaymentUrl('');
-          setCountdown(null);
         } else if (activeTopup.status === 'failed' || activeTopup.status === 'expired') {
           setPaidNotified(true);
           setPaymentUrl('');
           setActiveOrderId('');
-          setCountdown(null);
           if (activeTopup.status === 'expired') {
             setError('Topup kadaluarsa (lebih dari 20 menit). Silakan buat tagihan baru.');
           }
@@ -139,28 +153,20 @@ const Topup = () => {
 
   const hasPending = history.some(item => item.status === 'pending');
 
-  // ── Countdown Timer ──
-  useEffect(() => {
-    if (!countdown && countdown !== 0) return;
-    if (countdown <= 0) {
-      setPaymentUrl('');
-      setActiveOrderId('');
-      setError('Waktu pembayaran habis (20 menit). Silakan buat tagihan baru.');
-      setCountdown(null);
-      fetchHistory();
-      return;
-    }
-    const t = setTimeout(() => setCountdown(c => c - 1), 1000);
-    return () => clearTimeout(t);
-  }, [countdown]);
-
   const formatCountdown = (secs) => {
+    if (secs === null) return '';
     const m = Math.floor(secs / 60).toString().padStart(2, '0');
     const s = (secs % 60).toString().padStart(2, '0');
     return `${m}:${s}`;
   };
 
-  const countdownColor = countdown !== null && countdown < 60 ? 'error.main' : countdown < 300 ? 'warning.main' : 'success.main';
+  const countdownColor = countdown === null ? 'text.secondary'
+    : countdown < 60 ? 'error.main'
+    : countdown < 300 ? 'warning.main'
+    : 'success.main';
+
+  // Jika countdown habis (0) dan masih ada pending, tampilkan pesan
+  const isExpiredLocally = countdown === 0 && hasPending;
 
   return (
     <PageContainer title="Top Up Saldo" description="Isi ulang saldo via GoPay">
@@ -180,6 +186,29 @@ const Topup = () => {
               {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
               {successMsg && !paidNotified && <Alert severity="success" sx={{ mb: 2 }}>Tagihan berhasil dibuat. Silakan scan QRIS di bawah ini.</Alert>}
               
+              {/* ── Countdown Banner — muncul selama ada topup pending ── */}
+              {countdown !== null && !paidNotified && (
+                <Box
+                  mb={2} p={1.5}
+                  sx={{
+                    borderRadius: 2,
+                    border: '1.5px solid',
+                    borderColor: countdown === 0 ? 'error.main' : countdown < 60 ? 'error.main' : countdown < 300 ? 'warning.main' : 'success.main',
+                    bgcolor: countdown === 0 ? '#ffebee' : countdown < 60 ? '#ffebee' : countdown < 300 ? '#fff8e1' : '#e8f5e9',
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  }}
+                >
+                  <Typography variant="body2" fontWeight={600} color="text.secondary">
+                    {countdown === 0 ? '⛔ Waktu habis! Tagihan expired.' : '⏳ Batas waktu pembayaran:'}
+                  </Typography>
+                  {countdown > 0 && (
+                    <Typography variant="h6" fontWeight={800} fontFamily="monospace" color={countdownColor}>
+                      {formatCountdown(countdown)}
+                    </Typography>
+                  )}
+                </Box>
+              )}
+
               {!paymentUrl && (
                 <form onSubmit={handleTopup}>
                   <TextField
@@ -194,11 +223,28 @@ const Topup = () => {
                     required
                     disabled={hasPending}
                   />
-                  
+
                   {hasPending && (
                     <Alert severity="warning" sx={{ mb: 2 }}>
-                      Anda masih memiliki tagihan pending di riwayat. Selesaikan pembayaran tersebut sebelum membuat tagihan baru.
+                      Anda masih memiliki tagihan pending. Selesaikan pembayaran tersebut sebelum membuat tagihan baru.
                     </Alert>
+                  )}
+
+                  {/* Tombol lanjut bayar jika ada order aktif tapi QRIS ditutup */}
+                  {activeOrderId && !hasPending && countdown !== null && (
+                    <Button
+                      variant="outlined"
+                      color="warning"
+                      fullWidth
+                      size="large"
+                      sx={{ mb: 1.5 }}
+                      onClick={() => {
+                        const pending = history.find(i => i.id === activeOrderId);
+                        if (pending) handleResumePayment(pending);
+                      }}
+                    >
+                      🔁 Tampilkan QRIS Lagi
+                    </Button>
                   )}
 
                   <Button
@@ -219,7 +265,7 @@ const Topup = () => {
                 <Box textAlign="center" p={3} sx={{ bgcolor: 'grey.50', borderRadius: 2, border: '2px dashed #4caf50' }}>
                   <Typography variant="h6" color="success.main" mb={1}>Scan QRIS GoPay Ini</Typography>
                   <img src={paymentUrl} alt="QRIS" style={{ maxWidth: '100%', height: 'auto', borderRadius: 8 }} />
-                  
+
                   <Box mt={2} p={2} sx={{ bgcolor: 'warning.light', borderRadius: 1 }}>
                     <Typography variant="body2" color="warning.dark" fontWeight={700}>
                       PENTING! Transfer TEPAT sesuai nominal berikut:
@@ -227,20 +273,19 @@ const Topup = () => {
                     <Typography variant="h4" color="error.main" fontWeight={800} mt={1}>
                       Rp {Number(successMsg.replace(/\D/g, '') || 0).toLocaleString('id-ID')}
                     </Typography>
-                    {countdown !== null && (
-                      <Box mt={1.5} p={1} sx={{ bgcolor: 'white', borderRadius: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
-                        <Typography variant="caption" color="text.secondary">⏳ Batas waktu pembayaran:</Typography>
-                        <Typography variant="subtitle2" color={countdownColor} fontWeight={800} fontFamily="monospace" fontSize="1.1rem">
-                          {formatCountdown(countdown)}
-                        </Typography>
-                      </Box>
-                    )}
                     <Typography variant="caption" display="block" mt={1} color="warning.dark">
-                      Pembayaran diverifikasi otomatis. Saldo akan masuk setelah status transaksi PAID. Sedang menunggu... <CircularProgress size={12} />
+                      Pembayaran diverifikasi otomatis. Saldo masuk setelah status PAID. <CircularProgress size={12} />
                     </Typography>
                   </Box>
-                  <Button variant="outlined" color="primary" sx={{ mt: 2 }} onClick={() => setPaymentUrl('')} fullWidth>
-                    Tutup / Buat Tagihan Baru
+
+                  <Button
+                    variant="outlined"
+                    color="inherit"
+                    sx={{ mt: 2 }}
+                    onClick={() => setPaymentUrl('')}
+                    fullWidth
+                  >
+                    Tutup QRIS (Timer tetap berjalan)
                   </Button>
                 </Box>
               )}
