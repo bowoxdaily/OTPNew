@@ -1,5 +1,5 @@
 import {
-  IconAperture, IconCopy, IconLayoutDashboard, IconLogin, IconMoodHappy, IconTypography, IconUserPlus, IconUsers, IconDots, IconCash, IconShoppingCart, IconPalette, IconSettings
+  IconAperture, IconCopy, IconLayoutDashboard, IconLogin, IconTypography, IconUserPlus, IconUsers, IconCash, IconShoppingCart, IconPalette, IconSettings, IconUserCircle
 } from '@tabler/icons-react';
 
 import { uniqueId } from 'lodash';
@@ -88,6 +88,12 @@ const allMenuItems = [
   },
   {
     id: uniqueId(),
+    title: 'Profil Saya',
+    icon: IconUserCircle,
+    href: '/profile',
+  },
+  {
+    id: uniqueId(),
     title: 'Login',
     icon: IconLogin,
     href: '/auth/login',
@@ -98,23 +104,8 @@ const allMenuItems = [
     icon: IconUserPlus,
     href: '/auth/register',
   },
-  {
-    navlabel: true,
-    subheader: 'Lainnya',
-  },
-  {
-    id: uniqueId(),
-    title: 'Status Provider',
-    icon: IconMoodHappy,
-    href: '/otp/status-provider',
-  },
-  {
-    id: uniqueId(),
-    title: 'Dokumentasi API',
-    icon: IconAperture,
-    href: '/otp/dokumentasi-api',
-  },
 ];
+
 
 export function getMenuItemsByRole(role = 'user') {
   if (role === 'admin') {
@@ -146,8 +137,7 @@ export function getMenuItemsByRole(role = 'user') {
       '/otp/beli-nomor',
       '/otp/cek-otp',
       '/otp/mutasi-saldo',
-      '/otp/status-provider',
-      '/otp/dokumentasi-api'
+      '/profile',
     ];
     return userMenus.includes(item.href);
   });

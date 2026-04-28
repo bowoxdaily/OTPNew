@@ -27,6 +27,7 @@ const Shadow = Loadable(lazy(() => import('../views/utilities/Shadow')))
 const Error = Loadable(lazy(() => import('../views/authentication/Error')));
 const Register = Loadable(lazy(() => import('../views/authentication/Register')));
 const Login = Loadable(lazy(() => import('../views/authentication/Login')));
+const Profile = Loadable(lazy(() => import('../views/user/Profile')));
 
 const RequireAuth = ({ children }) => {
   const session = getUserSession();
@@ -125,6 +126,11 @@ const Router = [
       { path: '/icons', exact: true, element: <Icons /> },
       { path: '/ui/typography', exact: true, element: <TypographyPage /> },
       { path: '/ui/shadow', exact: true, element: <Shadow /> },
+      {
+        path: '/profile',
+        exact: true,
+        element: <RequireAuth><Profile /></RequireAuth>,
+      },
       { path: '*', element: <Navigate to="/auth/404" /> },
     ],
   },

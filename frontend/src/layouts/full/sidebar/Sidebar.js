@@ -1,6 +1,5 @@
 import { useMediaQuery, Box, Drawer } from '@mui/material';
 import SidebarItems from './SidebarItems';
-import { Upgrade } from './Updrade';
 import { Sidebar } from 'react-mui-sidebar';
 import { useBranding } from 'src/contexts/BrandingContext';
 import { Link } from 'react-router-dom';
@@ -97,9 +96,7 @@ const MSidebar = (props) => {
               showProfile={false}
             >
               <SidebarLogo />
-              <Box>
-                <SidebarItems />
-              </Box>
+              <SidebarItems />
             </Sidebar>
           </Box>
         </Drawer>
@@ -131,7 +128,6 @@ const MSidebar = (props) => {
       >
         <SidebarLogo />
         <SidebarItems />
-        <Upgrade />
       </Sidebar>
     </Drawer>
   );

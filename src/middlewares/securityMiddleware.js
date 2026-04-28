@@ -84,7 +84,7 @@ const corsMiddleware = cors({
  */
 const generalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 menit
-  max: 200, // Max 200 requests per 15 menit per IP
+  max: 500, // Max 500 mutating requests per 15 menit per IP
   standardHeaders: true,
   legacyHeaders: false,
   message: {

@@ -1,15 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     Box,
     Alert,
     Typography,
-    FormGroup,
-    FormControlLabel,
     Button,
     Stack,
-    Checkbox
+    InputAdornment,
+    IconButton,
+    CircularProgress,
 } from '@mui/material';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
+import { IconUser, IconLock, IconEye, IconEyeOff } from '@tabler/icons-react';
 
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 import { setUserSession } from 'src/utils/authSession';
@@ -17,19 +18,30 @@ import { apiFetch, readJsonSafe } from 'src/utils/apiClient';
 
 const AuthLogin = ({ title, subtitle, subtext }) => {
     const navigate = useNavigate();
-    const [username, setUsername] = React.useState('');
-    const [password, setPassword] = React.useState('');
-    const [error, setError] = React.useState('');
-    const [loading, setLoading] = React.useState(false);
+    const [username, setUsername] = useState('');
+    const [password, setPassword] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [error, setError] = useState('');
+    const [loading, setLoading] = useState(false);
 
     async function handleSignIn(event) {
         event.preventDefault();
         setError('');
+
+        if (!username.trim()) {
+            setError('Username tidak boleh kosong');
+            return;
+        }
+        if (!password) {
+            setError('Password tidak boleh kosong');
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await apiFetch('/api/auth/login', {
                 method: 'POST',
-                body: JSON.stringify({ username, password }),
+                body: JSON.stringify({ username: username.trim(), password }),
             });
             const data = await readJsonSafe(response);
             if (!response.ok || !data.success) {
@@ -45,69 +57,166 @@ const AuthLogin = ({ title, subtitle, subtext }) => {
             });
             navigate(user.role === 'admin' ? '/dashboard/admin' : '/dashboard/user');
         } catch (loginError) {
-            setError(loginError.message || 'Login gagal');
+            setError(loginError.message || 'Login gagal. Periksa username dan password Anda.');
         } finally {
             setLoading(false);
         }
     }
 
     return (
-        <>
-        {title ? (
-            <Typography fontWeight="700" variant="h2" mb={1}>
-                {title}
-            </Typography>
-        ) : null}
-
-        {subtext}
-
-        <Stack>
-            <Box>
-                <Typography variant="subtitle1"
-                    fontWeight={600} component="label" htmlFor='username' mb="5px">Username</Typography>
-                <CustomTextField id="username" variant="outlined" fullWidth value={username} onChange={(event) => setUsername(event.target.value)} />
-            </Box>
-            <Box mt="25px">
-                <Typography variant="subtitle1"
-                    fontWeight={600} component="label" htmlFor='password' mb="5px" >Password</Typography>
-                <CustomTextField id="password" type="password" variant="outlined" fullWidth value={password} onChange={(event) => setPassword(event.target.value)} />
-            </Box>
-            <Stack justifyContent="space-between" direction="row" alignItems="center" my={2}>
-                <FormGroup>
-                    <FormControlLabel
-                        control={<Checkbox defaultChecked />}
-                        label="Ingat perangkat ini"
-                    />
-                </FormGroup>
-                <Typography
-                    component={Link}
-                    to="/"
-                    fontWeight="500"
-                    sx={{
-                        textDecoration: 'none',
-                        color: 'primary.main',
-                    }}
-                >
-                    Lupa Password?
+        <form onSubmit={handleSignIn}>
+            {title && (
+                <Typography fontWeight="700" variant="h2" mb={1}>
+                    {title}
                 </Typography>
+            )}
+
+            {subtext}
+
+            <Stack spacing={2.5}>
+                {/* Username Field */}
+                <Box>
+                    <Typography
+                        variant="subtitle2"
+                        fontWeight={600}
+                        component="label"
+                        htmlFor="login-username"
+                        mb="6px"
+                        display="block"
+                        color="text.primary"
+                    >
+                        Username
+                    </Typography>
+                    <CustomTextField
+                        id="login-username"
+                        placeholder="Masukkan username Anda"
+                        variant="outlined"
+                        fullWidth
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        autoComplete="username"
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <IconUser size={20} color="#888" />
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: '12px',
+                                transition: 'all 0.2s ease',
+                                '&:hover': { backgroundColor: 'action.hover' },
+                            },
+                        }}
+                    />
+                </Box>
+
+                {/* Password Field */}
+                <Box>
+                    <Typography
+                        variant="subtitle2"
+                        fontWeight={600}
+                        component="label"
+                        htmlFor="login-password"
+                        mb="6px"
+                        display="block"
+                        color="text.primary"
+                    >
+                        Password
+                    </Typography>
+                    <CustomTextField
+                        id="login-password"
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Masukkan password"
+                        variant="outlined"
+                        fullWidth
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        autoComplete="current-password"
+                        InputProps={{
+                            startAdornment: (
+                                <InputAdornment position="start">
+                                    <IconLock size={20} color="#888" />
+                                </InputAdornment>
+                            ),
+                            endAdornment: (
+                                <InputAdornment position="end">
+                                    <IconButton
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        edge="end"
+                                        size="small"
+                                        aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                                    >
+                                        {showPassword ? <IconEyeOff size={18} /> : <IconEye size={18} />}
+                                    </IconButton>
+                                </InputAdornment>
+                            ),
+                        }}
+                        sx={{
+                            '& .MuiOutlinedInput-root': {
+                                borderRadius: '12px',
+                                transition: 'all 0.2s ease',
+                                '&:hover': { backgroundColor: 'action.hover' },
+                            },
+                        }}
+                    />
+                </Box>
             </Stack>
-        </Stack>
-        {error ? <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert> : null}
-        <Box>
+
+            {/* Error Alert */}
+            {error && (
+                <Alert
+                    severity="error"
+                    sx={{
+                        mt: 2,
+                        borderRadius: '12px',
+                        '& .MuiAlert-icon': { alignItems: 'center' },
+                    }}
+                    onClose={() => setError('')}
+                >
+                    {error}
+                </Alert>
+            )}
+
+            {/* Submit Button */}
             <Button
                 color="primary"
                 variant="contained"
                 size="large"
                 fullWidth
-                onClick={handleSignIn}
-                disabled={loading}
                 type="submit"
+                disabled={loading}
+                sx={{
+                    mt: 3,
+                    py: 1.4,
+                    borderRadius: '12px',
+                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    textTransform: 'none',
+                    boxShadow: '0 4px 14px rgba(93,135,255,0.4)',
+                    transition: 'all 0.2s ease',
+                    '&:hover': {
+                        transform: 'translateY(-1px)',
+                        boxShadow: '0 6px 20px rgba(93,135,255,0.5)',
+                    },
+                    '&:active': {
+                        transform: 'translateY(0)',
+                    },
+                }}
             >
-                {loading ? 'Masuk...' : 'Masuk'}
+                {loading ? (
+                    <Stack direction="row" spacing={1} alignItems="center">
+                        <CircularProgress size={20} color="inherit" />
+                        <span>Memproses...</span>
+                    </Stack>
+                ) : (
+                    'Masuk'
+                )}
             </Button>
-        </Box>
-        {subtitle}
-    </>
+
+            {subtitle}
+        </form>
     );
 };
 

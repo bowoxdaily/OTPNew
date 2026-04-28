@@ -33,7 +33,7 @@ function validatePasswordStrength(password) {
 
 async function register(req, res, next) {
   try {
-    const { name, username, password } = req.body;
+    const { name, username, password, email, phone } = req.body;
     if (!name || !username || !password) {
       return res.status(400).json({
         success: false,
@@ -65,6 +65,42 @@ async function register(req, res, next) {
       });
     }
 
+    // Validate email (optional but must be valid if provided)
+    let cleanEmail = null;
+    if (email) {
+      cleanEmail = String(email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Format email tidak valid',
+        });
+      }
+      if (cleanEmail.length > 100) {
+        return res.status(400).json({
+          success: false,
+          message: 'Email maksimal 100 karakter',
+        });
+      }
+    }
+
+    // Validate phone (optional but must be valid if provided)
+    let cleanPhone = null;
+    if (phone) {
+      cleanPhone = String(phone).trim().replace(/[^0-9+]/g, '');
+      // Normalize: 08xxx → +628xxx
+      if (cleanPhone.startsWith('08')) {
+        cleanPhone = '+62' + cleanPhone.slice(1);
+      }
+      // Must be 10-15 digits (after country code)
+      const digitsOnly = cleanPhone.replace(/[^0-9]/g, '');
+      if (digitsOnly.length < 10 || digitsOnly.length > 15) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nomor HP tidak valid (10-15 digit)',
+        });
+      }
+    }
+
     // Validate password strength
     const passwordError = validatePasswordStrength(String(password));
     if (passwordError) {
@@ -86,6 +122,8 @@ async function register(req, res, next) {
       name: cleanName,
       username: cleanUsername,
       password: String(password),
+      email: cleanEmail,
+      phone: cleanPhone,
     });
 
     return res.status(201).json({
@@ -156,8 +194,104 @@ async function me(req, res, next) {
   }
 }
 
+async function updateProfile(req, res, next) {
+  try {
+    const userId = req.user?.sub;
+    const { name, email, phone } = req.body;
+
+    const cleanName = name ? String(name).trim() : null;
+    if (cleanName && (cleanName.length < 2 || cleanName.length > 50)) {
+      return res.status(400).json({ success: false, message: 'Nama harus 2-50 karakter' });
+    }
+
+    let cleanEmail = null;
+    if (email) {
+      cleanEmail = String(email).trim().toLowerCase();
+      if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+        return res.status(400).json({ success: false, message: 'Format email tidak valid' });
+      }
+    }
+
+    let cleanPhone = null;
+    if (phone) {
+      cleanPhone = String(phone).trim().replace(/[^0-9+]/g, '');
+      if (cleanPhone.startsWith('08')) cleanPhone = '+62' + cleanPhone.slice(1);
+      const digits = cleanPhone.replace(/[^0-9]/g, '');
+      if (digits.length < 10 || digits.length > 15) {
+        return res.status(400).json({ success: false, message: 'Nomor HP tidak valid (10-15 digit)' });
+      }
+    }
+
+    const updateData = { updated_at: new Date().toISOString() };
+    if (cleanName) updateData.name = cleanName;
+    if (cleanEmail) updateData.email = cleanEmail;
+    if (cleanPhone) updateData.phone = cleanPhone;
+
+    const { supabase } = require('../services/supabaseClient');
+    const { data, error } = await supabase
+      .from('users')
+      .update(updateData)
+      .eq('id', userId)
+      .select('*')
+      .single();
+
+    if (error) throw error;
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profil berhasil diperbarui',
+      data: sanitizeUser(data),
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function changePassword(req, res, next) {
+  try {
+    const userId = req.user?.sub;
+    const { current_password, new_password } = req.body;
+
+    if (!current_password || !new_password) {
+      return res.status(400).json({ success: false, message: 'Password lama dan baru wajib diisi' });
+    }
+
+    const user = await findById(userId);
+    if (!user) return res.status(404).json({ success: false, message: 'User tidak ditemukan' });
+
+    if (!verifyPassword(String(current_password), user.password_hash)) {
+      return res.status(401).json({ success: false, message: 'Password lama tidak sesuai' });
+    }
+
+    const passwordError = validatePasswordStrength(String(new_password));
+    if (passwordError) {
+      return res.status(400).json({ success: false, message: passwordError });
+    }
+
+    const { hashPassword } = require('../store/usersStore');
+    const { supabase } = require('../services/supabaseClient');
+    const crypto = require('crypto');
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.pbkdf2Sync(new_password, salt, 10000, 64, 'sha512').toString('hex');
+    const newPasswordHash = `${salt}:${hash}`;
+
+    const { error } = await supabase
+      .from('users')
+      .update({ password_hash: newPasswordHash, updated_at: new Date().toISOString() })
+      .eq('id', userId);
+
+    if (error) throw error;
+
+    return res.status(200).json({ success: true, message: 'Password berhasil diperbarui' });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   register,
   login,
   me,
+  updateProfile,
+  changePassword,
 };

@@ -56,16 +56,20 @@ async function findByUsername(username) {
   return data || null;
 }
 
-async function createUser({ name, username, password }) {
+async function createUser({ name, username, password, email, phone }) {
+  const insertData = {
+    username,
+    name,
+    role: 'user',
+    password_hash: hashPassword(password),
+    balance: 0, // Ditetapkan ke 0, user harus topup dulu
+  };
+  if (email) insertData.email = email;
+  if (phone) insertData.phone = phone;
+
   const { data, error } = await supabase
     .from('users')
-    .insert({
-      username,
-      name,
-      role: 'user',
-      password_hash: hashPassword(password),
-      balance: 0, // Ditetapkan ke 0, user harus topup dulu
-    })
+    .insert(insertData)
     .select('*')
     .single();
 
