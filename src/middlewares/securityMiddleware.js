@@ -22,6 +22,8 @@ const defaultAllowedOrigins = [
   'https://www.otp.bowo-store.id',
   'https://bitnexid.com',
   'https://www.bitnexid.com',
+  'https://otp.bitnexid.com',
+  'https://www.otp.bitnexid.com',
 ];
 
 const envAllowedOrigins = (process.env.CORS_ALLOWED_ORIGINS || '')
