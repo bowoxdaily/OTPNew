@@ -18,7 +18,9 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
-  Alert
+  Alert,
+  Stack,
+  TablePagination
 } from '@mui/material';
 import { IconCopy, IconRefresh, IconMessage2, IconX } from '@tabler/icons-react';
 import PageContainer from 'src/components/container/PageContainer';
@@ -35,11 +37,24 @@ const CekOtp = () => {
   const [otpError, setOtpError] = useState('');
 
   const [now, setNow] = useState(Date.now());
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
     return () => clearInterval(interval);
   }, []);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedOrders = orders.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   useEffect(() => {
     fetchOrders();
@@ -99,6 +114,14 @@ const CekOtp = () => {
     setSelectedOrder(null);
   };
 
+  const hasValidSms = (result) => {
+    if (!result || !result.sms) return false;
+    const text = String(result.sms).trim().toLowerCase();
+    // Jika provider merespon dengan text waiting, berarti SMS belum masuk
+    if (text === 'waiting sms code' || text === 'waiting') return false;
+    return true;
+  };
+
   const checkOtpSms = async (orderId) => {
     setOtpChecking(true);
     setOtpError('');
@@ -125,6 +148,8 @@ const CekOtp = () => {
       const data = await readJsonSafe(res);
       if (res.ok && data.success) {
         alert('Status berhasil diubah menjadi Ready. Menunggu OTP...');
+        setSelectedOrder(prev => ({ ...prev, status: 'waiting' }));
+        fetchOrders(); // refresh table in background
         checkOtpSms(orderId);
       } else {
         throw new Error(data.message || 'Gagal set ready');
@@ -167,14 +192,14 @@ const CekOtp = () => {
   return (
     <PageContainer title="Cek OTP & Riwayat Order" description="Daftar pesanan nomor dan pesan masuk">
       <Box mb={4}>
-        <Typography variant="h3" fontWeight="700" mb={1}>Riwayat & Cek OTP 📩</Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="h3" fontWeight="700" mb={1} sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>Riwayat & Cek OTP 📩</Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
           Pantau status pesanan nomor Anda dan terima SMS (OTP) secara langsung di sini.
         </Typography>
       </Box>
 
-      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
-        <Box p={3} display="flex" justifyContent="space-between" alignItems="center">
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
+        <Box p={{ xs: 2, sm: 3 }} display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }} gap={2}>
           <Typography variant="h6" fontWeight={600}>Daftar Pesanan Terakhir</Typography>
           <Button 
             variant="outlined" 
@@ -182,6 +207,7 @@ const CekOtp = () => {
             onClick={fetchOrders}
             disabled={loading}
             size="small"
+            sx={{ width: { xs: '100%', sm: 'auto' } }}
           >
             Refresh
           </Button>
@@ -189,7 +215,8 @@ const CekOtp = () => {
 
         {error && <Alert severity="error" sx={{ mx: 3, mb: 3 }}>{error}</Alert>}
 
-        <TableContainer>
+        {/* Desktop View */}
+        <TableContainer sx={{ display: { xs: 'none', md: 'block' } }}>
           <Table sx={{ minWidth: 600 }}>
             <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
@@ -215,7 +242,7 @@ const CekOtp = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                orders.map((item) => (
+                paginatedOrders.map((item) => (
                   <TableRow key={item.id} hover>
                     <TableCell>
                       <Typography variant="body2">{new Date(item.created_at).toLocaleString('id-ID')}</Typography>
@@ -270,6 +297,86 @@ const CekOtp = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Mobile View */}
+        <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+          {loading && orders.length === 0 ? (
+            <Box textAlign="center" py={5}><CircularProgress /></Box>
+          ) : orders.length === 0 ? (
+            <Box textAlign="center" py={5}><Typography color="text.secondary">Belum ada pesanan nomor.</Typography></Box>
+          ) : (
+            <Stack spacing={2} p={2} sx={{ bgcolor: 'grey.50' }}>
+              {paginatedOrders.map((item) => (
+                <Card key={item.id} variant="outlined" sx={{ borderRadius: 2, bgcolor: 'background.paper' }}>
+                  <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                    <Box display="flex" justifyContent="space-between" mb={1}>
+                      <Typography variant="caption" color="text.secondary">
+                        {new Date(item.created_at).toLocaleString('id-ID')}
+                      </Typography>
+                      <Chip 
+                        label={(item.status || '').toUpperCase()} 
+                        size="small" 
+                        color={item.status === 'completed' ? 'success' : item.status === 'canceled' ? 'error' : 'warning'} 
+                        variant="outlined" 
+                        sx={{ height: 20, fontSize: '0.65rem' }}
+                      />
+                    </Box>
+                    <Typography variant="body2" fontFamily="monospace" color="text.secondary" mb={1}>
+                      ID: {item.provider_order_id}
+                    </Typography>
+                    <Box display="flex" alignItems="center" justifyContent="space-between" mb={2}>
+                      <Typography variant="h6" fontWeight={700}>
+                        +{item.number}
+                        <IconButton size="small" onClick={() => copyToClipboard(item.number)} sx={{ ml: 0.5 }}>
+                          <IconCopy size={16} />
+                        </IconButton>
+                      </Typography>
+                      <Chip label={(item.layanan || '').toUpperCase()} size="small" color="primary" variant="outlined" />
+                    </Box>
+                    
+                    {(item.status === 'pending' || item.status === 'waiting') && (
+                      <Box mb={2}>
+                        {!isOrderExpired(item.created_at) ? (
+                          <Typography variant="caption" color="warning.main" fontWeight={600}>
+                            Sisa Waktu: {getOrderRemainingTime(item.created_at)}
+                          </Typography>
+                        ) : (
+                          <Typography variant="caption" color="error.main" fontWeight={600}>
+                            Expired
+                          </Typography>
+                        )}
+                      </Box>
+                    )}
+
+                    <Button
+                      variant="contained"
+                      color="secondary"
+                      fullWidth
+                      startIcon={<IconMessage2 size={16} />}
+                      onClick={() => handleOpenDialog(item)}
+                      sx={{ borderRadius: 2 }}
+                    >
+                      Cek SMS
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </Stack>
+          )}
+        </Box>
+        
+        {orders.length > 0 && (
+          <TablePagination
+            component="div"
+            count={orders.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Per halaman:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} dari ${count !== -1 ? count : `lebih dari ${to}`}`}
+          />
+        )}
       </Card>
 
       {/* Dialog Cek OTP */}
@@ -278,14 +385,14 @@ const CekOtp = () => {
           <Typography variant="h6" fontWeight={700}>Detail Order & SMS</Typography>
           <IconButton onClick={handleCloseDialog} size="small"><IconX /></IconButton>
         </DialogTitle>
-        <DialogContent dividers>
+        <DialogContent dividers sx={{ p: { xs: 2, sm: 3 } }}>
           {selectedOrder && (
             <Box mb={3}>
               <Typography variant="subtitle2" color="text.secondary">Order ID</Typography>
-              <Typography variant="body1" fontWeight={500} mb={1}>{selectedOrder.provider_order_id}</Typography>
+              <Typography variant="body1" fontWeight={500} mb={1} sx={{ wordBreak: 'break-all' }}>{selectedOrder.provider_order_id}</Typography>
               
               <Typography variant="subtitle2" color="text.secondary">Nomor Handphone</Typography>
-              <Typography variant="h5" fontWeight={700} color="primary.main" mb={2}>+{selectedOrder.number}</Typography>
+              <Typography variant="h5" fontWeight={700} color="primary.main" mb={2} sx={{ wordBreak: 'break-all' }}>+{selectedOrder.number}</Typography>
             </Box>
           )}
 
@@ -295,7 +402,7 @@ const CekOtp = () => {
               {otpChecking ? (
                 <Box>
                   <CircularProgress size={24} sx={{ mb: 1 }} />
-                  <Typography variant="body2" color="text.secondary">Mengecek server VirtuSIM...</Typography>
+                  <Typography variant="body2" color="text.secondary">Mengecek Server...</Typography>
                 </Box>
               ) : otpError ? (
                 <Alert severity="error">{otpError}</Alert>
@@ -307,42 +414,47 @@ const CekOtp = () => {
                           🚫 Pesanan Dibatalkan
                         </Typography>
                     </Box>
-                  ) : otpResult.sms || otpResult.status === 'PENDING' ? (
-                    <Box sx={{ p: 2, backgroundColor: otpResult.status === 'PENDING' ? 'warning.light' : 'success.light', borderRadius: 1 }}>
-                        <Typography variant="body1" fontWeight={otpResult.sms ? 600 : 400} color={otpResult.status === 'PENDING' ? 'warning.dark' : 'success.dark'}>
-                          {otpResult.sms ? `💬 ${otpResult.sms}` : '⏳ Menunggu SMS masuk...'}
+                  ) : hasValidSms(otpResult) ? (
+                    <Box sx={{ p: 2, backgroundColor: 'success.light', borderRadius: 1 }}>
+                        <Typography variant="body1" fontWeight={600} color="success.dark">
+                          💬 {otpResult.sms}
                         </Typography>
                     </Box>
                   ) : (
-                    <Typography variant="body2" color="text.secondary">Response: {JSON.stringify(otpResult)}</Typography>
+                    <Box sx={{ p: 2, backgroundColor: 'warning.light', borderRadius: 1 }}>
+                        <Typography variant="body1" fontWeight={600} color="warning.dark">
+                          ⏳ Menunggu SMS masuk...
+                        </Typography>
+                    </Box>
                   )}
                 </Box>
               ) : null}
             </CardContent>
           </Card>
         </DialogContent>
-        <DialogActions sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
-          {selectedOrder && (!otpResult?.sms && selectedOrder?.status !== 'completed') ? (
+        <DialogActions sx={{ p: { xs: 2, sm: 3 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 2 }}>
+          {selectedOrder && (!hasValidSms(otpResult) && selectedOrder?.status !== 'completed') ? (
             <Button 
               onClick={() => handleCancelOrder(selectedOrder.provider_order_id)} 
               color="error" 
               variant="text"
+              sx={{ width: { xs: '100%', sm: 'auto' } }}
               disabled={otpChecking || selectedOrder?.status === 'canceled' || getCancelWaitTime(selectedOrder.created_at) !== 0}
             >
               {getCancelWaitTime(selectedOrder.created_at) !== 0 
                 ? `Batalkan (${getCancelWaitTime(selectedOrder.created_at)})` 
                 : 'Batalkan Pesanan'}
             </Button>
-          ) : <Box />}
-          <Box>
-            <Button onClick={handleCloseDialog} color="inherit" sx={{ mr: 1 }}>Tutup</Button>
-            {(!otpResult?.sms) && selectedOrder && (
+          ) : <Box sx={{ display: { xs: 'none', sm: 'block' } }} />}
+          <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, width: { xs: '100%', sm: 'auto' } }}>
+            <Button onClick={handleCloseDialog} color="inherit" sx={{ width: { xs: '100%', sm: 'auto' } }}>Tutup</Button>
+            {(!hasValidSms(otpResult)) && selectedOrder?.status === 'pending' && otpResult?.status !== 'READY' && otpResult?.status !== 'WAITING' && (
               <Button 
                 onClick={() => handleSetReady(selectedOrder.provider_order_id)} 
                 variant="outlined" 
                 color="info"
                 disabled={otpChecking || selectedOrder?.status === 'canceled'}
-                sx={{ mr: 1 }}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 Set Ready
               </Button>
@@ -354,6 +466,7 @@ const CekOtp = () => {
                 color="primary"
                 disabled={otpChecking || selectedOrder?.status === 'canceled'}
                 startIcon={otpChecking && <IconRefresh className="spin-icon" />}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
               >
                 {otpChecking ? 'Mengecek...' : 'Refresh SMS'}
               </Button>

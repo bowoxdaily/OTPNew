@@ -16,7 +16,9 @@ import {
   TableCell,
   TableBody,
   Chip,
-  IconButton
+  IconButton,
+  Stack,
+  TablePagination
 } from '@mui/material';
 import { IconWallet, IconRefresh } from '@tabler/icons-react';
 import PageContainer from 'src/components/container/PageContainer';
@@ -33,6 +35,19 @@ const Topup = () => {
   const [activeOrderId, setActiveOrderId] = useState('');
   const [paidNotified, setPaidNotified] = useState(false);
   const [tick, setTick] = useState(0); // forces re-render setiap detik
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const paginatedHistory = history.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   const EXPIRY_MS = 20 * 60 * 1000; // 20 menit dalam ms
 
@@ -173,8 +188,8 @@ const Topup = () => {
   return (
     <PageContainer title="Top Up Saldo" description="Isi ulang saldo via GoPay">
       <Box mb={4}>
-        <Typography variant="h3" fontWeight="700" mb={1}>Isi Saldo (Top Up) 💰</Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="h3" fontWeight="700" mb={1} sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>Isi Saldo (Top Up) 💰</Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
           Top up saldo Anda secara otomatis menggunakan GoPay atau QRIS. Minimal Rp 5.000.
         </Typography>
       </Box>
@@ -305,7 +320,9 @@ const Topup = () => {
                 </IconButton>
               </Box>
               
-              <TableContainer>
+              
+              {/* Desktop View */}
+              <TableContainer sx={{ display: { xs: 'none', md: 'block' } }}>
                 <Table size="small">
                   <TableHead sx={{ bgcolor: 'grey.50' }}>
                     <TableRow>
@@ -325,7 +342,7 @@ const Topup = () => {
                         <TableCell colSpan={4} align="center"><Typography color="text.secondary" my={2}>Belum ada riwayat top up.</Typography></TableCell>
                       </TableRow>
                     ) : (
-                      history.map((item) => (
+                      paginatedHistory.map((item) => (
                         <TableRow key={item.id} hover>
                           <TableCell>
                             <Typography variant="body2">{new Date(item.created_at).toLocaleString('id-ID')}</Typography>
@@ -364,6 +381,73 @@ const Topup = () => {
                   </TableBody>
                 </Table>
               </TableContainer>
+
+              {/* Mobile View */}
+              <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+                {historyLoading ? (
+                  <Box textAlign="center" py={3}><CircularProgress size={24} /></Box>
+                ) : history.length === 0 ? (
+                  <Box textAlign="center" py={3}><Typography color="text.secondary">Belum ada riwayat top up.</Typography></Box>
+                ) : (
+                  <Stack spacing={2}>
+                    {paginatedHistory.map((item) => (
+                      <Card key={item.id} variant="outlined" sx={{ borderRadius: 2 }}>
+                        <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                          <Box display="flex" justifyContent="space-between" mb={1}>
+                            <Typography variant="caption" color="text.secondary">
+                              {new Date(item.created_at).toLocaleString('id-ID')}
+                            </Typography>
+                            <Chip 
+                              label={item.status === 'expired' ? 'EXPIRED' : item.status.toUpperCase()} 
+                              size="small" 
+                              color={
+                                item.status === 'success' ? 'success' 
+                                : item.status === 'pending' ? 'warning' 
+                                : 'error'
+                              }
+                              sx={{ height: 20, fontSize: '0.65rem', ...(item.status === 'expired' ? { bgcolor: 'grey.400', color: 'white' } : {}) }}
+                            />
+                          </Box>
+                          <Typography variant="caption" color="text.secondary" fontFamily="monospace" display="block" mb={1}>
+                            ID: {String(item.id).substring(0, 15)}...
+                          </Typography>
+                          <Box display="flex" alignItems="center" justifyContent="space-between" mb={item.status === 'pending' ? 1.5 : 0}>
+                            <Typography variant="h6" fontWeight={700}>
+                              Rp {Number(item.amount).toLocaleString('id-ID')}
+                            </Typography>
+                          </Box>
+                          {item.status === 'pending' && (
+                            <Button 
+                              variant="outlined" 
+                              size="small" 
+                              color="primary" 
+                              fullWidth
+                              onClick={() => handleResumePayment(item)}
+                              disabled={activeOrderId === item.id && !!paymentUrl}
+                            >
+                              {activeOrderId === item.id && paymentUrl ? 'Menunggu...' : 'Bayar Tagihan'}
+                            </Button>
+                          )}
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </Stack>
+                )}
+              </Box>
+
+              {history.length > 0 && (
+                <TablePagination
+                  component="div"
+                  count={history.length}
+                  page={page}
+                  onPageChange={handleChangePage}
+                  rowsPerPage={rowsPerPage}
+                  onRowsPerPageChange={handleChangeRowsPerPage}
+                  rowsPerPageOptions={[5, 10, 25]}
+                  labelRowsPerPage="Per halaman:"
+                  labelDisplayedRows={({ from, to, count }) => `${from}–${to} dari ${count !== -1 ? count : `lebih dari ${to}`}`}
+                />
+              )}
             </CardContent>
           </Card>
         </Grid>

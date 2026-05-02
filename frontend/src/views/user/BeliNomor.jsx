@@ -4,6 +4,7 @@ import {
   Typography,
   Grid,
   Card,
+  CardContent,
   TextField,
   MenuItem,
   Button,
@@ -23,6 +24,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
+  TablePagination
 } from '@mui/material';
 import {
   IconSearch,
@@ -62,6 +64,19 @@ const BeliNomor = () => {
 
   const [orderLoading, setOrderLoading] = useState(false);
   const [orderMessage, setOrderMessage] = useState(null);
+
+  // Pagination state
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
 
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
@@ -112,6 +127,13 @@ const BeliNomor = () => {
     item.layanan.toLowerCase().includes(searchQuery.toLowerCase()) ||
     item.code.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  // Reset page when search or filters change
+  useEffect(() => {
+    setPage(0);
+  }, [searchQuery, selectedNegara]);
+
+  const paginatedCatalog = filteredCatalog.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
 
   // Open modal when user clicks "Beli" on a service
   const openOrderModal = (service) => {
@@ -208,8 +230,8 @@ const BeliNomor = () => {
   return (
     <PageContainer title="Beli Nomor Lanjutan" description="Katalog lengkap pembelian nomor OTP">
       <Box mb={4}>
-        <Typography variant="h3" fontWeight="700" mb={1}>Katalog Layanan Lengkap 🛒</Typography>
-        <Typography variant="body1" color="text.secondary">
+        <Typography variant="h3" fontWeight="700" mb={1} sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>Katalog Layanan Lengkap 🛒</Typography>
+        <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
           Cari layanan yang Anda butuhkan, filter berdasarkan negara, dan pesan sekaligus.
         </Typography>
       </Box>
@@ -254,10 +276,11 @@ const BeliNomor = () => {
         </Grid>
       </Grid>
 
-      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3 }}>
+      <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 3, overflow: 'hidden' }}>
         {error && <Alert severity="warning" sx={{ m: 2 }}>{error}</Alert>}
         
-        <TableContainer>
+        {/* Desktop View */}
+        <TableContainer sx={{ display: { xs: 'none', md: 'block' } }}>
           <Table sx={{ minWidth: 600 }}>
             <TableHead sx={{ bgcolor: 'grey.50' }}>
               <TableRow>
@@ -282,7 +305,7 @@ const BeliNomor = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredCatalog.map((item) => {
+                paginatedCatalog.map((item) => {
                   const isAvailable = item.stok > 0 || item.stok === undefined || item.stok === null;
                   const hasVariants = item.variants && item.variants.length > 1;
                   
@@ -343,6 +366,89 @@ const BeliNomor = () => {
             </TableBody>
           </Table>
         </TableContainer>
+
+        {/* Mobile View */}
+        <Box sx={{ display: { xs: 'block', md: 'none' } }}>
+          {loading ? (
+            <Box textAlign="center" py={5}>
+              <CircularProgress />
+              <Typography mt={2}>Memuat katalog layanan dari upstream...</Typography>
+            </Box>
+          ) : filteredCatalog.length === 0 ? (
+            <Box textAlign="center" py={5}>
+              <Typography color="text.secondary">Layanan tidak ditemukan.</Typography>
+            </Box>
+          ) : (
+            <Stack spacing={2} p={2} sx={{ bgcolor: 'grey.50' }}>
+              {paginatedCatalog.map((item) => {
+                const isAvailable = item.stok > 0 || item.stok === undefined || item.stok === null;
+                const hasVariants = item.variants && item.variants.length > 1;
+
+                return (
+                  <Card key={item.code} variant="outlined" sx={{ borderRadius: 2, bgcolor: 'background.paper' }}>
+                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+                      <Box display="flex" justifyContent="space-between" mb={2}>
+                        <Stack direction="row" alignItems="center" spacing={1.5}>
+                          {getServiceIcon(item.code)}
+                          <Box>
+                            <Typography variant="body1" fontWeight={600} sx={{ lineHeight: 1.2, mb: 0.5 }}>
+                              {item.layanan.charAt(0).toUpperCase() + item.layanan.slice(1)}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary" display="block">
+                              Kode: {item.code.toUpperCase()}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                        {hasVariants && (
+                          <Chip 
+                            label={`${item.variants.length} harga`}
+                            size="small"
+                            color="secondary"
+                            sx={{ height: 20, fontSize: '0.65rem', fontWeight: 600 }}
+                          />
+                        )}
+                      </Box>
+                      
+                      <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
+                        <Typography variant="caption" color={isAvailable ? 'success.main' : 'error.main'} fontWeight={500}>
+                          {item.stok > 0 ? `${item.stok} pcs` : (item.stok === 0 ? 'Habis' : 'Tersedia')}
+                        </Typography>
+                        <Typography variant="body1" fontWeight={700} color="primary.main">
+                          Rp {Number(item.harga).toLocaleString('id-ID')}
+                        </Typography>
+                      </Box>
+
+                      <Button 
+                        variant="contained" 
+                        color="primary" 
+                        fullWidth
+                        disabled={!isAvailable || orderLoading}
+                        onClick={() => openOrderModal(item)}
+                        startIcon={<IconShoppingCart size={16} />}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Beli Layanan
+                      </Button>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </Stack>
+          )}
+        </Box>
+
+        {filteredCatalog.length > 0 && (
+          <TablePagination
+            component="div"
+            count={filteredCatalog.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            labelRowsPerPage="Per halaman:"
+            labelDisplayedRows={({ from, to, count }) => `${from}–${to} dari ${count !== -1 ? count : `lebih dari ${to}`}`}
+          />
+        )}
       </Card>
 
       {/* ============ CONFIRM ORDER MODAL ============ */}
@@ -484,8 +590,8 @@ const BeliNomor = () => {
           )}
         </DialogContent>
 
-        <DialogActions sx={{ px: 3, pb: 3, pt: 1 }}>
-          <Button onClick={closeModal} color="inherit" sx={{ borderRadius: 2 }}>
+        <DialogActions sx={{ px: { xs: 2, sm: 3 }, pb: { xs: 2, sm: 3 }, pt: 1, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1 }}>
+          <Button onClick={closeModal} color="inherit" sx={{ borderRadius: 2, width: { xs: '100%', sm: 'auto' } }}>
             Cancel
           </Button>
           <Button 
@@ -494,7 +600,7 @@ const BeliNomor = () => {
             disabled={!modalSelectedVariant || orderLoading}
             onClick={handleConfirmOrder}
             startIcon={orderLoading ? <CircularProgress size={16} color="inherit" /> : <IconShoppingCart size={18} />}
-            sx={{ borderRadius: 2, px: 4 }}
+            sx={{ borderRadius: 2, px: 4, width: { xs: '100%', sm: 'auto' } }}
           >
             {orderLoading ? 'Memproses...' : 'Confirm Order'}
           </Button>
