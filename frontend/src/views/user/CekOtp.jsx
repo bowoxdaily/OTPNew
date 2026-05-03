@@ -309,7 +309,7 @@ const CekOtp = () => {
                       <Typography variant="body2" fontFamily="monospace">{item.provider_order_id}</Typography>
                     </TableCell>
                     <TableCell>
-                      <Chip label={(item.layanan || '').toUpperCase()} size="small" color="primary" variant="outlined" />
+                      <Chip label={(item.layanan_name || item.layanan || '').toUpperCase()} size="small" color="primary" variant="outlined" />
                     </TableCell>
                     <TableCell>
                       <Typography variant="body1" fontWeight={600}>
@@ -379,7 +379,7 @@ const CekOtp = () => {
                           <IconCopy size={16} />
                         </IconButton>
                       </Typography>
-                      <Chip label={(item.layanan || '').toUpperCase()} size="small" color="primary" variant="outlined" />
+                      <Chip label={(item.layanan_name || item.layanan || '').toUpperCase()} size="small" color="primary" variant="outlined" />
                     </Box>
                     
                     {(item.status === 'pending' || item.status === 'waiting') && (
@@ -438,7 +438,12 @@ const CekOtp = () => {
             <Box mb={3}>
               <Typography variant="subtitle2" color="text.secondary">Order ID</Typography>
               <Typography variant="body1" fontWeight={500} mb={1} sx={{ wordBreak: 'break-all' }}>{selectedOrder.provider_order_id}</Typography>
-              
+
+              <Typography variant="subtitle2" color="text.secondary">Layanan</Typography>
+              <Typography variant="body1" fontWeight={600} mb={1}>
+                {(selectedOrder.layanan_name || selectedOrder.layanan || '').toUpperCase()}
+              </Typography>
+
               <Typography variant="subtitle2" color="text.secondary">Nomor Handphone</Typography>
               <Typography variant="h5" fontWeight={700} color="primary.main" mb={2} sx={{ wordBreak: 'break-all' }}>+{selectedOrder.number}</Typography>
             </Box>

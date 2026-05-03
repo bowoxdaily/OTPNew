@@ -397,7 +397,26 @@ async function getUserOrdersHandler(req, res, next) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
     const orders = await getUserOrders(userId);
-    return res.status(200).json({ success: true, data: orders });
+
+    // Enrich orders with service name from cache
+    const enrichedOrders = await Promise.all(
+      orders.map(async (order) => {
+        try {
+          const layananList = await getLayananFromCache(order.negara);
+          const serviceInfo = layananList.find(
+            (s) => String(s.service_code || s.code) === String(order.layanan)
+          );
+          return {
+            ...order,
+            layanan_name: serviceInfo?.service_name || serviceInfo?.layanan || order.layanan,
+          };
+        } catch {
+          return { ...order, layanan_name: order.layanan };
+        }
+      })
+    );
+
+    return res.status(200).json({ success: true, data: enrichedOrders });
   } catch (error) {
     return next(error);
   }
@@ -408,7 +427,26 @@ async function getAllOrdersHandler(req, res, next) {
     const orders = await getAllOrders();
     // Return sorted by created_at DESC (assuming getAllOrders doesn't sort, we sort it here)
     orders.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    return res.status(200).json({ success: true, data: orders });
+
+    // Enrich orders with service name from cache
+    const enrichedOrders = await Promise.all(
+      orders.map(async (order) => {
+        try {
+          const layananList = await getLayananFromCache(order.negara);
+          const serviceInfo = layananList.find(
+            (s) => String(s.service_code || s.code) === String(order.layanan)
+          );
+          return {
+            ...order,
+            layanan_name: serviceInfo?.service_name || serviceInfo?.layanan || order.layanan,
+          };
+        } catch {
+          return { ...order, layanan_name: order.layanan };
+        }
+      })
+    );
+
+    return res.status(200).json({ success: true, data: enrichedOrders });
   } catch (error) {
     return next(error);
   }
