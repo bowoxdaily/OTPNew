@@ -79,6 +79,8 @@ const getServiceIcon = (serviceCode) => {
 const Dashboard = () => {
   const session = getUserSession();
   const { branding } = useBranding();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const [orderForm, setOrderForm] = useState({
     ...initialOrderForm,
@@ -529,7 +531,7 @@ const Dashboard = () => {
                       }}
                       isOptionEqualToValue={(option, value) => option.id === value.id}
                       renderInput={(params) => (
-                        <TextField {...params} label="Negara" required fullWidth size={{ xs: 'small', sm: 'medium' }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
+                        <TextField {...params} label="Negara" required fullWidth size={isMobile ? 'small' : 'medium'} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
                       )}
                     />
                   </Grid>
@@ -553,7 +555,7 @@ const Dashboard = () => {
                         </li>
                       )}
                       renderInput={(params) => (
-                        <TextField {...params} label="Layanan" required fullWidth size={{ xs: 'small', sm: 'medium' }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
+                        <TextField {...params} label="Layanan" required fullWidth size={isMobile ? 'small' : 'medium'} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
                       )}
                     />
                   </Grid>
@@ -566,7 +568,7 @@ const Dashboard = () => {
                         handleOrderFieldChange({ target: { name: 'operator', value: newValue || '' } });
                       }}
                       renderInput={(params) => (
-                        <TextField {...params} label="Operator" required fullWidth size={{ xs: 'small', sm: 'medium' }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
+                        <TextField {...params} label="Operator" required fullWidth size={isMobile ? 'small' : 'medium'} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
                       )}
                     />
                   </Grid>
@@ -578,7 +580,7 @@ const Dashboard = () => {
                       value={`Rp ${Number(orderForm.price).toLocaleString('id-ID')}`} 
                       fullWidth 
                       disabled 
-                      size={{ xs: 'small', sm: 'medium' }}
+                      size={isMobile ? 'small' : 'medium'}
                       sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#eef2f6' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: 'text.primary', fontWeight: 600, fontSize: { xs: '0.875rem', sm: '1rem' } } }}
                     />
                   </Grid>
@@ -589,7 +591,7 @@ const Dashboard = () => {
                         variant="contained" 
                         color="primary" 
                         disabled={orderLoading} 
-                        size={{ xs: 'medium', sm: 'large' }}
+                        size={isMobile ? 'medium' : 'large'}
                         sx={{ px: { xs: 3, sm: 4 }, py: { xs: 1, sm: 1.5 }, borderRadius: 2, boxShadow: 2, fontSize: { xs: '0.875rem', sm: '1rem' } }}
                         startIcon={orderLoading && <IconRefresh className="spin-icon" size={18} />}
                       >
@@ -601,7 +603,7 @@ const Dashboard = () => {
                         color="inherit"
                         onClick={handleResetOrderForm} 
                         disabled={orderLoading}
-                        size={{ xs: 'medium', sm: 'large' }}
+                        size={isMobile ? 'medium' : 'large'}
                         sx={{ px: { xs: 2, sm: 3 }, py: { xs: 1, sm: 1.5 }, borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } }}
                       >
                         Reset Form
@@ -649,14 +651,14 @@ const Dashboard = () => {
                     onChange={(event) => setOtpId(event.target.value)}
                     fullWidth
                     required
-                    size={{ xs: 'small', sm: 'medium' }}
+                    size={isMobile ? 'small' : 'medium'}
                     sx={{ mb: { xs: 1.5, sm: 2 }, '& .MuiInputBase-input': { fontSize: { xs: '0.875rem', sm: '1rem' } } }}
                   />
                   
                   <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 }, mb: { xs: 1.5, sm: 2 }, borderRadius: 2, backgroundColor: 'grey.50' }}>
                     <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={{ xs: 1.5, sm: 2 }}>
                       <FormControlLabel
-                        control={<Switch checked={autoRefreshOtp} onChange={(event) => setAutoRefreshOtp(event.target.checked)} color="primary" size={{ xs: 'small', sm: 'medium' }} />}
+                        control={<Switch checked={autoRefreshOtp} onChange={(event) => setAutoRefreshOtp(event.target.checked)} color="primary" size={isMobile ? 'small' : 'medium'} />}
                         label={<Typography variant="body2" fontWeight={500} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Auto-refresh (10s)</Typography>}
                       />
                       <Button 
@@ -665,7 +667,7 @@ const Dashboard = () => {
                         color="secondary"
                         disabled={otpLoading || !canCheckOtp}
                         startIcon={otpLoading && <IconRefresh className="spin-icon" size={16} />}
-                        size={{ xs: 'small', sm: 'medium' }}
+                        size={isMobile ? 'small' : 'medium'}
                         sx={{ borderRadius: 2, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                       >
                         {otpLoading ? 'Mengecek...' : 'Cek Sekarang'}

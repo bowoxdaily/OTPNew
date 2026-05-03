@@ -6,7 +6,6 @@ import {
   Card,
   CardContent,
   Chip,
-  Divider,
   Grid,
   Stack,
   Typography,
@@ -18,7 +17,9 @@ import {
   TableHead,
   TableRow,
   Paper,
-  LinearProgress
+  LinearProgress,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   IconUsers,
@@ -54,6 +55,9 @@ const AdminDashboard = () => {
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [catalogError, setCatalogError] = useState('');
   const [selectedNegara, setSelectedNegara] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
   useEffect(() => {
     let active = true;
@@ -224,49 +228,74 @@ const AdminDashboard = () => {
         </Grid>
 
         <Grid container spacing={{ xs: 2, sm: 3 }}>
-          {/* Status Provider (Left, 7 columns on desktop) */}
-          <Grid item xs={12} lg={7}>
+          {/* Status Provider (Left, 7 columns on tablet+) */}
+          <Grid item xs={12} md={7}>
             <Stack spacing={{ xs: 2, sm: 3 }}>
               <DashboardCard 
                 title="Status Provider OTP" 
                 subtitle="Ketersediaan layanan & response time"
                 action={<IconActivity color="#5D87FF" />}
               >
-                <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: { xs: 1.5, sm: 2 }, whiteSpace: 'nowrap', overflowX: 'auto' }}>
-                  <Table size="small">
-                    <TableHead sx={{ backgroundColor: 'grey.50' }}>
-                      <TableRow>
-                        <TableCell sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Nama Provider</Typography></TableCell>
-                        <TableCell sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Status</Typography></TableCell>
-                        <TableCell align="right" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Response</Typography></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {providerStatus.map((provider) => (
-                        <TableRow key={provider.name}>
-                          <TableCell sx={{ py: { xs: 0.75, sm: 1 } }}>
-                            <Stack direction="row" alignItems="center" spacing={{ xs: 0.5, sm: 1 }}>
-                              <IconServer size={16} color="#7C8FAC" />
-                              <Typography variant="body2" fontWeight={500} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{provider.name}</Typography>
-                            </Stack>
-                          </TableCell>
-                          <TableCell sx={{ py: { xs: 0.75, sm: 1 } }}>
-                            <Chip 
-                              label={provider.status} 
-                              size="small" 
-                              color={provider.status === 'Online' ? 'success' : 'error'}
-                              variant={provider.status === 'Online' ? 'contained' : 'outlined'}
-                              sx={{ fontWeight: 600, fontSize: { xs: '0.65rem', sm: '0.75rem' }, height: { xs: 20, sm: 24 } }}
-                            />
-                          </TableCell>
-                          <TableCell align="right" sx={{ py: { xs: 0.75, sm: 1 } }}>
-                            <Typography variant="body2" fontWeight={500} color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{provider.response}</Typography>
-                          </TableCell>
+                {isMobile ? (
+                  /* Mobile: Card list for provider status */
+                  <Stack spacing={1.5}>
+                    {providerStatus.map((provider) => (
+                      <Paper key={provider.name} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <IconServer size={14} color="#7C8FAC" />
+                            <Typography variant="body2" fontWeight={600} fontSize="0.8rem">{provider.name}</Typography>
+                          </Stack>
+                          <Chip
+                            label={provider.status}
+                            size="small"
+                            color={provider.status === 'Online' ? 'success' : 'error'}
+                            variant={provider.status === 'Online' ? 'contained' : 'outlined'}
+                            sx={{ fontWeight: 600, fontSize: '0.65rem', height: 20 }}
+                          />
+                        </Box>
+                        <Typography variant="caption" color="text.secondary" fontSize="0.7rem" mt={0.5} display="block">Response: {provider.response}</Typography>
+                      </Paper>
+                    ))}
+                  </Stack>
+                ) : (
+                  /* Tablet/Desktop: Table */
+                  <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: 2, overflowX: 'auto' }}>
+                    <Table size={isTablet ? 'small' : 'medium'}>
+                      <TableHead sx={{ backgroundColor: 'grey.50' }}>
+                        <TableRow>
+                          <TableCell sx={{ py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { sm: '0.75rem', md: '0.875rem' } }}>Nama Provider</Typography></TableCell>
+                          <TableCell sx={{ py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { sm: '0.75rem', md: '0.875rem' } }}>Status</Typography></TableCell>
+                          <TableCell align="right" sx={{ py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { sm: '0.75rem', md: '0.875rem' } }}>Response</Typography></TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {providerStatus.map((provider) => (
+                          <TableRow key={provider.name}>
+                            <TableCell sx={{ py: { xs: 0.75, sm: 1 } }}>
+                              <Stack direction="row" alignItems="center" spacing={1}>
+                                <IconServer size={16} color="#7C8FAC" />
+                                <Typography variant="body2" fontWeight={500} sx={{ fontSize: { sm: '0.8rem', md: '0.875rem' } }}>{provider.name}</Typography>
+                              </Stack>
+                            </TableCell>
+                            <TableCell sx={{ py: { xs: 0.75, sm: 1 } }}>
+                              <Chip 
+                                label={provider.status} 
+                                size="small" 
+                                color={provider.status === 'Online' ? 'success' : 'error'}
+                                variant={provider.status === 'Online' ? 'contained' : 'outlined'}
+                                sx={{ fontWeight: 600, fontSize: { sm: '0.7rem', md: '0.75rem' } }}
+                              />
+                            </TableCell>
+                            <TableCell align="right" sx={{ py: { xs: 0.75, sm: 1 } }}>
+                              <Typography variant="body2" fontWeight={500} color="text.secondary" sx={{ fontSize: { sm: '0.8rem', md: '0.875rem' } }}>{provider.response}</Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
               </DashboardCard>
 
               <DashboardCard 
@@ -274,48 +303,71 @@ const AdminDashboard = () => {
                 subtitle="Kontributor omzet terbesar"
                 action={<IconTrendingUp color="#13DEB9" />}
               >
-                <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: { xs: 1.5, sm: 2 }, whiteSpace: 'nowrap', overflowX: 'auto' }}>
-                  <Table size="small">
-                    <TableHead sx={{ backgroundColor: 'grey.50' }}>
-                      <TableRow>
-                        <TableCell sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Reseller</Typography></TableCell>
-                        <TableCell align="center" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Order</Typography></TableCell>
-                        <TableCell align="right" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' }, py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Omzet</Typography></TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {topReseller.map((reseller, index) => (
-                        <TableRow key={reseller.username}>
-                          <TableCell sx={{ py: { xs: 0.75, sm: 1 } }}>
-                            <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 2 }}>
-                              <Avatar sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, bgcolor: index === 0 ? 'warning.main' : 'primary.main', fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                                {reseller.username.charAt(0).toUpperCase()}
-                              </Avatar>
-                              <Typography variant="body2" fontWeight={600} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>@{reseller.username}</Typography>
-                            </Stack>
-                          </TableCell>
-                          <TableCell align="center" sx={{ py: { xs: 0.75, sm: 1 } }}>
-                            <Chip label={reseller.order} size="small" sx={{ backgroundColor: 'grey.100', fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem' }, height: { xs: 20, sm: 24 } }} />
-                          </TableCell>
-                          <TableCell align="right" sx={{ py: { xs: 0.75, sm: 1 } }}>
-                            <Typography variant="subtitle2" fontWeight={700} color="primary.main" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
-                              Rp {reseller.omzet.toLocaleString('id-ID')}
-                            </Typography>
-                          </TableCell>
+                {isMobile ? (
+                  /* Mobile: Card list for top reseller */
+                  <Stack spacing={1.5}>
+                    {topReseller.map((reseller, index) => (
+                      <Paper key={reseller.username} variant="outlined" sx={{ p: 1.5, borderRadius: 2 }}>
+                        <Box display="flex" justifyContent="space-between" alignItems="center">
+                          <Stack direction="row" alignItems="center" spacing={1}>
+                            <Avatar sx={{ width: 28, height: 28, bgcolor: index === 0 ? 'warning.main' : 'primary.main', fontSize: '0.75rem' }}>
+                              {reseller.username.charAt(0).toUpperCase()}
+                            </Avatar>
+                            <Typography variant="body2" fontWeight={600} fontSize="0.8rem">@{reseller.username}</Typography>
+                          </Stack>
+                          <Chip label={reseller.order} size="small" sx={{ backgroundColor: 'grey.100', fontWeight: 600, fontSize: '0.65rem', height: 20 }} />
+                        </Box>
+                        <Typography variant="body2" fontWeight={700} color="primary.main" fontSize="0.8rem" mt={0.75}>
+                          Rp {reseller.omzet.toLocaleString('id-ID')}
+                        </Typography>
+                      </Paper>
+                    ))}
+                  </Stack>
+                ) : (
+                  /* Tablet/Desktop: Table */
+                  <TableContainer component={Paper} elevation={0} variant="outlined" sx={{ borderRadius: 2, overflowX: 'auto' }}>
+                    <Table size={isTablet ? 'small' : 'medium'}>
+                      <TableHead sx={{ backgroundColor: 'grey.50' }}>
+                        <TableRow>
+                          <TableCell sx={{ py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { sm: '0.75rem', md: '0.875rem' } }}>Reseller</Typography></TableCell>
+                          <TableCell align="center" sx={{ py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { sm: '0.75rem', md: '0.875rem' } }}>Order</Typography></TableCell>
+                          <TableCell align="right" sx={{ py: { xs: 1, sm: 1.5 } }}><Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { sm: '0.75rem', md: '0.875rem' } }}>Omzet</Typography></TableCell>
                         </TableRow>
-                      ))}
-                    </TableBody>
-                  </Table>
-                </TableContainer>
+                      </TableHead>
+                      <TableBody>
+                        {topReseller.map((reseller, index) => (
+                          <TableRow key={reseller.username}>
+                            <TableCell sx={{ py: { xs: 0.75, sm: 1 } }}>
+                              <Stack direction="row" alignItems="center" spacing={1.5}>
+                                <Avatar sx={{ width: { sm: 28, md: 32 }, height: { sm: 28, md: 32 }, bgcolor: index === 0 ? 'warning.main' : 'primary.main', fontSize: { sm: '0.75rem', md: '0.875rem' } }}>
+                                  {reseller.username.charAt(0).toUpperCase()}
+                                </Avatar>
+                                <Typography variant="body2" fontWeight={600} sx={{ fontSize: { sm: '0.8rem', md: '0.875rem' } }}>@{reseller.username}</Typography>
+                              </Stack>
+                            </TableCell>
+                            <TableCell align="center" sx={{ py: { xs: 0.75, sm: 1 } }}>
+                              <Chip label={reseller.order} size="small" sx={{ backgroundColor: 'grey.100', fontWeight: 600, fontSize: { sm: '0.7rem', md: '0.75rem' } }} />
+                            </TableCell>
+                            <TableCell align="right" sx={{ py: { xs: 0.75, sm: 1 } }}>
+                              <Typography variant="subtitle2" fontWeight={700} color="primary.main" sx={{ fontSize: { sm: '0.8rem', md: '0.875rem' } }}>
+                                Rp {reseller.omzet.toLocaleString('id-ID')}
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                )}
               </DashboardCard>
             </Stack>
           </Grid>
 
-          {/* Right Column (5 columns on desktop) */}
-          <Grid item xs={12} lg={5}>
+          {/* Right Column (5 columns on tablet+) */}
+          <Grid item xs={12} md={5}>
             <Stack spacing={{ xs: 2, sm: 3 }}>
               <DashboardCard title="Katalog Layanan (Upstream)" subtitle="Data langsung dari provider utama">
-                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2} spacing={1}>
+                <Stack direction="row" justifyContent="space-between" alignItems="center" mb={{ xs: 1.5, sm: 2 }} spacing={1}>
                   <Box sx={{ minWidth: 0 }}>
                     <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
                       {selectedNegara?.name || 'Indonesia'}
@@ -326,20 +378,20 @@ const AdminDashboard = () => {
                   </Box>
                   <Button 
                     variant="outlined" 
-                    size="small" 
+                    size={isMobile ? 'small' : 'small'}
                     onClick={fetchCatalog} 
                     disabled={catalogLoading}
-                    startIcon={catalogLoading ? <IconRefresh className="spin-icon" size={16} /> : <IconRefresh size={16} />}
+                    startIcon={catalogLoading ? <IconRefresh className="spin-icon" size={14} /> : <IconRefresh size={14} />}
                     sx={{ borderRadius: 2, flexShrink: 0, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                   >
                     Refresh
                   </Button>
                 </Stack>
                 
-                {catalogError && <Alert severity="error" sx={{ mb: 2, borderRadius: 2, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{catalogError}</Alert>}
+                {catalogError && <Alert severity="error" sx={{ mb: { xs: 1.5, sm: 2 }, borderRadius: 2, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{catalogError}</Alert>}
                 
                 <Box sx={{ 
-                  maxHeight: { xs: 300, sm: 350, md: 400 }, 
+                  maxHeight: { xs: 280, sm: 320, md: 380 }, 
                   overflow: 'auto',
                   border: '1px solid',
                   borderColor: 'divider',
@@ -347,8 +399,8 @@ const AdminDashboard = () => {
                   bgcolor: 'grey.50'
                 }}>
                   {catalog.length === 0 && !catalogLoading ? (
-                    <Box p={3} textAlign="center">
-                      <Typography color="text.secondary" variant="body2">Belum ada layanan tersedia.</Typography>
+                    <Box p={{ xs: 2, sm: 3 }} textAlign="center">
+                      <Typography color="text.secondary" variant="body2" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>Belum ada layanan tersedia.</Typography>
                     </Box>
                   ) : (
                     <Table size="small" stickyHeader>
@@ -356,7 +408,7 @@ const AdminDashboard = () => {
                         {catalog.slice(0, 50).map((item, index) => (
                           <TableRow key={`${item.code}-${index}`} sx={{ '&:last-child td': { border: 0 } }}>
                             <TableCell sx={{ bgcolor: 'transparent', py: { xs: 0.75, sm: 1 } }}>
-                              <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: { xs: 120, sm: 150 }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                              <Typography variant="body2" fontWeight={600} noWrap sx={{ maxWidth: { xs: 140, sm: 160, md: 180 }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                                 {item.layanan}
                               </Typography>
                               <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
@@ -381,14 +433,18 @@ const AdminDashboard = () => {
                   <Typography variant="h6" color="primary.main" mb={{ xs: 1.5, sm: 2 }} fontWeight={600} sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
                     Aksi Cepat Admin
                   </Typography>
-                  <Stack spacing={{ xs: 1, sm: 1.5 }}>
-                    <Button variant="contained" color="primary" fullWidth sx={{ justifyContent: 'flex-start', py: { xs: 0.75, sm: 1 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                      Manajemen Markup Harga
-                    </Button>
-                    <Button variant="outlined" color="primary" fullWidth sx={{ justifyContent: 'flex-start', py: { xs: 0.75, sm: 1 }, bgcolor: '#fff', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
-                      Lihat Daftar Pengguna
-                    </Button>
-                  </Stack>
+                  <Grid container spacing={{ xs: 1, sm: 1.5 }}>
+                    <Grid item xs={12} sm={6} md={12}>
+                      <Button variant="contained" color="primary" fullWidth sx={{ justifyContent: 'flex-start', py: { xs: 0.75, sm: 1 }, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                        Manajemen Markup Harga
+                      </Button>
+                    </Grid>
+                    <Grid item xs={12} sm={6} md={12}>
+                      <Button variant="outlined" color="primary" fullWidth sx={{ justifyContent: 'flex-start', py: { xs: 0.75, sm: 1 }, bgcolor: '#fff', fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                        Lihat Daftar Pengguna
+                      </Button>
+                    </Grid>
+                  </Grid>
                 </CardContent>
               </Card>
             </Stack>
