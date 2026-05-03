@@ -7,6 +7,8 @@ const {
   getLayananByCountry,
   cancelOrder,
   setOrderReady,
+  resendOrder,
+  reactiveOrder,
 } = require('../services/providerService');
 const { findById, listUsers, atomicDeductBalance, atomicRefundBalance } = require('../store/usersStore');
 const { createOrder, getAllOrders, getUserOrders, getOrderByProviderId, updateOrderStatus } = require('../store/ordersStore');
@@ -491,7 +493,7 @@ async function setOrderReadyHandler(req, res, next) {
     }
 
     const providerResult = await setOrderReady({ id });
-    
+
     if (providerResult?.status === false || providerResult?.status === 'false') {
       const errorMsg = providerResult?.data?.msg || providerResult?.data || 'Gagal set status ke provider';
       return res.status(400).json({ success: false, message: `Gagal: ${errorMsg}` });
@@ -509,6 +511,106 @@ async function setOrderReadyHandler(req, res, next) {
   }
 }
 
+async function resendOrderHandler(req, res, next) {
+  const { id } = req.params;
+  const userId = req.user?.sub;
+
+  if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+    return res.status(400).json({ success: false, message: 'ID tidak valid' });
+  }
+
+  try {
+    const order = await getOrderByProviderId(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order tidak ditemukan' });
+    }
+    if (order.user_id !== userId) {
+      return res.status(403).json({ success: false, message: 'Akses ditolak' });
+    }
+
+    // 1. Send resend request to provider (status=3 = Resend SMS)
+    const resendResult = await resendOrder({ id });
+
+    // Check if provider accepted the resend request
+    if (resendResult?.status === false || resendResult?.status === 'false') {
+      const errorMsg = resendResult?.data?.msg || resendResult?.data || 'Gagal resend di provider';
+      return res.status(400).json({ success: false, message: `Gagal resend: ${errorMsg}` });
+    }
+
+    // 2. Wait a moment for provider to process the resend
+    await new Promise(resolve => setTimeout(resolve, 2000));
+
+    // 3. Fetch the latest SMS from provider
+    const providerResult = await checkSms({ id });
+
+    // Parse response dari VirtuSIM
+    let smsStatus = 'PENDING';
+    let smsText = '';
+
+    if (providerResult?.data && Array.isArray(providerResult.data) && providerResult.data.length > 0) {
+      const smsData = providerResult.data[0];
+      smsStatus = String(smsData.status || 'PENDING').toUpperCase();
+      smsText = smsData.sms || smsData.otp || '';
+    } else if (providerResult?.status && typeof providerResult.status === 'string') {
+      smsStatus = providerResult.status.toUpperCase();
+      smsText = providerResult.sms || providerResult.otp || '';
+    } else if (providerResult?.sms || providerResult?.otp) {
+      smsStatus = 'SUCCESS';
+      smsText = providerResult.sms || providerResult.otp;
+    }
+
+    return res.status(200).json({
+      success: true,
+      message: smsText ? 'SMS berhasil diambil ulang' : 'SMS belum tersedia',
+      data: {
+        status: smsStatus,
+        sms: smsText,
+      },
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
+async function reactiveOrderHandler(req, res, next) {
+  const { id } = req.params;
+  const userId = req.user?.sub;
+
+  if (!id || !/^[a-zA-Z0-9_-]+$/.test(id)) {
+    return res.status(400).json({ success: false, message: 'ID tidak valid' });
+  }
+
+  try {
+    const order = await getOrderByProviderId(id);
+    if (!order) {
+      return res.status(404).json({ success: false, message: 'Order tidak ditemukan' });
+    }
+    if (order.user_id !== userId) {
+      return res.status(403).json({ success: false, message: 'Akses ditolak' });
+    }
+
+    // Send reactive request to provider
+    const providerResult = await reactiveOrder({ id });
+
+    // Check if provider accepted the reactive request
+    if (providerResult?.status === false || providerResult?.status === 'false') {
+      const errorMsg = providerResult?.data?.msg || providerResult?.data || 'Gagal reaktivasi di provider';
+      return res.status(400).json({ success: false, message: `Gagal reaktivasi: ${errorMsg}` });
+    }
+
+    // Update order status back to waiting/pending
+    await updateOrderStatus(id, 'waiting');
+
+    return res.status(200).json({
+      success: true,
+      message: 'Nomor berhasil diaktifkan kembali. Menunggu OTP...',
+      data: providerResult,
+    });
+  } catch (error) {
+    return next(error);
+  }
+}
+
 module.exports = {
   buyNumber,
   checkOtp,
@@ -520,4 +622,6 @@ module.exports = {
   getAllOrdersHandler,
   cancelOrderHandler,
   setOrderReadyHandler,
+  resendOrderHandler,
+  reactiveOrderHandler,
 };

@@ -204,7 +204,7 @@ const Profile = () => {
   }
 
   return (
-    <PageContainer title="Profil Saya" description="Pengaturan akun Anda">
+    <PageContainer title="Profil Saya | OTP Reseller" description="Pengaturan akun OTP Reseller Anda. Update data diri, ganti password, dan kelola keamanan akun.">
       <Fade in timeout={400}>
         <Box sx={{ maxWidth: 780, mx: 'auto' }}>
 

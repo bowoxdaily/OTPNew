@@ -80,13 +80,29 @@ export const BrandingProvider = ({ children }) => {
   }, []);
 
   const updateFavicon = (url) => {
-    let link = document.querySelector("link[rel~='icon']");
-    if (!link) {
-      link = document.createElement('link');
-      link.rel = 'icon';
-      document.head.appendChild(link);
-    }
-    link.href = url;
+    if (!url) return;
+
+    // Remove all existing favicon links to ensure only branding favicon is used
+    const existingIcons = document.querySelectorAll("link[rel='icon'], link[rel='shortcut icon'], link[rel='apple-touch-icon']");
+    existingIcons.forEach(link => link.remove());
+
+    // Create new favicon links with branding URL
+    const iconLink = document.createElement('link');
+    iconLink.rel = 'icon';
+    iconLink.type = 'image/png';
+    iconLink.href = url;
+    document.head.appendChild(iconLink);
+
+    const shortcutLink = document.createElement('link');
+    shortcutLink.rel = 'shortcut icon';
+    shortcutLink.type = 'image/png';
+    shortcutLink.href = url;
+    document.head.appendChild(shortcutLink);
+
+    const appleLink = document.createElement('link');
+    appleLink.rel = 'apple-touch-icon';
+    appleLink.href = url;
+    document.head.appendChild(appleLink);
   };
 
   /**

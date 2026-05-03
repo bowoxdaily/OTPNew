@@ -189,8 +189,56 @@ const CekOtp = () => {
     navigator.clipboard.writeText(text);
   };
 
+  const handleResendOrder = async (orderId) => {
+    setOtpChecking(true);
+    setOtpError('');
+    try {
+      const res = await apiFetch(`/api/orders/${orderId}/resend`, { method: 'POST' });
+      const data = await readJsonSafe(res);
+      if (res.ok && data.success) {
+        setOtpResult(data.data);
+        if (data.data.sms) {
+          alert('SMS berhasil diambil ulang!');
+        } else {
+          alert('SMS belum tersedia, silakan coba lagi nanti.');
+        }
+      } else {
+        throw new Error(data.message || 'Gagal mengambil ulang SMS');
+      }
+    } catch (err) {
+      setOtpError(err.message);
+      alert(err.message);
+    } finally {
+      setOtpChecking(false);
+    }
+  };
+
+  const handleReactiveOrder = async (orderId) => {
+    if (!window.confirm('Aktifkan kembali nomor ini untuk menerima OTP baru? Saldo tidak akan dikenakan biaya tambahan.')) return;
+
+    setOtpChecking(true);
+    setOtpError('');
+    try {
+      const res = await apiFetch(`/api/orders/${orderId}/reactive`, { method: 'POST' });
+      const data = await readJsonSafe(res);
+      if (res.ok && data.success) {
+        alert(data.message);
+        setSelectedOrder(prev => ({ ...prev, status: 'waiting' }));
+        fetchOrders();
+        checkOtpSms(orderId);
+      } else {
+        throw new Error(data.message || 'Gagal mengaktifkan kembali nomor');
+      }
+    } catch (err) {
+      setOtpError(err.message);
+      alert(err.message);
+    } finally {
+      setOtpChecking(false);
+    }
+  };
+
   return (
-    <PageContainer title="Cek OTP & Riwayat Order" description="Daftar pesanan nomor dan pesan masuk">
+    <PageContainer title="Cek OTP & Riwayat Order | OTP Reseller" description="Cek status pesanan nomor OTP dan lihat pesan masuk secara real-time. Pantau riwayat pembelian nomor virtual Anda.">
       <Box mb={4}>
         <Typography variant="h3" fontWeight="700" mb={1} sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>Riwayat & Cek OTP 📩</Typography>
         <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
@@ -431,6 +479,13 @@ const CekOtp = () => {
               ) : null}
             </CardContent>
           </Card>
+
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              • Jika OTP tidak muncul, Anda dapat mengklik tombol <strong>"Batalkan Pesanan"</strong> sebelum waktu habis. Saldo akan otomatis <strong>DIKEMBALIKAN</strong> ke saldo Anda.<br />
+              • Jika sudah selesai, Anda cukup menekan tombol <strong>"Tutup"</strong> untuk menyelesaikannya.
+            </Typography>
+          </Alert>
         </DialogContent>
         <DialogActions sx={{ p: { xs: 2, sm: 3 }, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, justifyContent: 'space-between', gap: 2 }}>
           {selectedOrder && (!hasValidSms(otpResult) && selectedOrder?.status !== 'completed') ? (
@@ -449,9 +504,9 @@ const CekOtp = () => {
           <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 1, width: { xs: '100%', sm: 'auto' } }}>
             <Button onClick={handleCloseDialog} color="inherit" sx={{ width: { xs: '100%', sm: 'auto' } }}>Tutup</Button>
             {(!hasValidSms(otpResult)) && selectedOrder?.status === 'pending' && otpResult?.status !== 'READY' && otpResult?.status !== 'WAITING' && (
-              <Button 
-                onClick={() => handleSetReady(selectedOrder.provider_order_id)} 
-                variant="outlined" 
+              <Button
+                onClick={() => handleSetReady(selectedOrder.provider_order_id)}
+                variant="outlined"
                 color="info"
                 disabled={otpChecking || selectedOrder?.status === 'canceled'}
                 sx={{ width: { xs: '100%', sm: 'auto' } }}
@@ -459,10 +514,32 @@ const CekOtp = () => {
                 Set Ready
               </Button>
             )}
+            {hasValidSms(otpResult) && selectedOrder && selectedOrder.status !== 'canceled' && selectedOrder.status !== 'completed' && (
+              <Button
+                onClick={() => handleResendOrder(selectedOrder.provider_order_id)}
+                variant="outlined"
+                color="success"
+                disabled={otpChecking}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              >
+                Ambil Ulang SMS
+              </Button>
+            )}
+            {selectedOrder?.status === 'completed' && (
+              <Button
+                onClick={() => handleReactiveOrder(selectedOrder.provider_order_id)}
+                variant="outlined"
+                color="warning"
+                disabled={otpChecking}
+                sx={{ width: { xs: '100%', sm: 'auto' } }}
+              >
+                Aktifkan Kembali
+              </Button>
+            )}
             {selectedOrder && (
-              <Button 
-                onClick={() => checkOtpSms(selectedOrder.provider_order_id)} 
-                variant="contained" 
+              <Button
+                onClick={() => checkOtpSms(selectedOrder.provider_order_id)}
+                variant="contained"
                 color="primary"
                 disabled={otpChecking || selectedOrder?.status === 'canceled'}
                 startIcon={otpChecking && <IconRefresh className="spin-icon" />}

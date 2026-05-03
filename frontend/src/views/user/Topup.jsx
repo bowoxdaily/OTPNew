@@ -186,7 +186,7 @@ const Topup = () => {
     : 'success.main';
 
   return (
-    <PageContainer title="Top Up Saldo" description="Isi ulang saldo via GoPay">
+    <PageContainer title="Top Up Saldo | OTP Reseller" description="Isi ulang saldo akun OTP Reseller via QRIS. Pembayaran otomatis, saldo langsung masuk dalam hitungan detik.">
       <Box mb={4}>
         <Typography variant="h3" fontWeight="700" mb={1} sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>Isi Saldo (Top Up) 💰</Typography>
         <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>

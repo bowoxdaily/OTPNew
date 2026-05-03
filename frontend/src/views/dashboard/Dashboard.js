@@ -397,7 +397,7 @@ const Dashboard = () => {
   }, [autoRefreshOtp, otpId]);
 
   return (
-    <PageContainer title="Dashboard" description="Overview Operasional">
+    <PageContainer title="Dashboard | OTP Reseller" description="Dashboard user OTP Reseller. Pantau saldo, pesanan aktif, dan akses layanan beli nomor OTP dengan mudah.">
       <Box>
         {/* Hero Section */}
         <Box mb={4}>

@@ -10,6 +10,8 @@ const {
   getAllOrdersHandler,
   cancelOrderHandler,
   setOrderReadyHandler,
+  resendOrderHandler,
+  reactiveOrderHandler,
 } = require('../controllers/otpController');
 
 const {
@@ -40,6 +42,12 @@ router.post('/orders/:id/cancel', requireAuth, cancelOrderHandler);
 
 // Set Order Ready (VirtuSIM requirement to receive OTP)
 router.post('/orders/:id/ready', requireAuth, setOrderReadyHandler);
+
+// Resend/Refresh SMS (when OTP already received, to get it again)
+router.post('/orders/:id/resend', requireAuth, resendOrderHandler);
+
+// Reactive order (for completed orders to receive new SMS)
+router.post('/orders/:id/reactive', requireAuth, reactiveOrderHandler);
 
 router.get('/admin/summary', requireAuth, requireRole('admin'), getAdminSummary);
 router.get('/catalog/negara', requireAuth, getNegaraCatalog);

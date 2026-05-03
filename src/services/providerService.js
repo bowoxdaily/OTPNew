@@ -84,6 +84,16 @@ function setOrderReady({ id }) {
   return sendRequest('set_status', { id, status: 1 });
 }
 
+// VirtuSIM: action=set_status&id=123&status=3 (3 = Resend SMS)
+function resendOrder({ id }) {
+  return sendRequest('set_status', { id, status: 3 });
+}
+
+// VirtuSIM: action=reactive_order&id=123 (Reactivate completed order)
+function reactiveOrder({ id }) {
+  return sendRequest('reactive_order', { id });
+}
+
 // VirtuSIM: action=list_country
 async function getCountries() {
   const raw = await sendRequest('list_country');
@@ -162,6 +172,8 @@ module.exports = {
   checkSms,
   cancelOrder,
   setOrderReady,
+  resendOrder,
+  reactiveOrder,
   getCountries,
   getOperatorsByCountry,
   getLayananByCountry,

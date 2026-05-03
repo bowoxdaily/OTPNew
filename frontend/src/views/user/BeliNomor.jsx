@@ -228,7 +228,7 @@ const BeliNomor = () => {
   };
 
   return (
-    <PageContainer title="Beli Nomor Lanjutan" description="Katalog lengkap pembelian nomor OTP">
+    <PageContainer title="Beli Nomor OTP | OTP Reseller" description="Katalog lengkap pembelian nomor OTP untuk WhatsApp, Telegram, Instagram, TikTok, dan 100+ layanan lainnya. Harga terjangkau, proses instan.">
       <Box mb={4}>
         <Typography variant="h3" fontWeight="700" mb={1} sx={{ fontSize: { xs: '1.5rem', sm: '2.125rem' } }}>Katalog Layanan Lengkap 🛒</Typography>
         <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
