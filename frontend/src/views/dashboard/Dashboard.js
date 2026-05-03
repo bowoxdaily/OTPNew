@@ -24,7 +24,9 @@ import {
   Paper,
   IconButton,
   Tooltip,
-  Autocomplete
+  Autocomplete,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   IconWallet,
@@ -400,32 +402,32 @@ const Dashboard = () => {
     <PageContainer title="Dashboard | OTP Reseller" description="Dashboard user OTP Reseller. Pantau saldo, pesanan aktif, dan akses layanan beli nomor OTP dengan mudah.">
       <Box>
         {/* Hero Section */}
-        <Box mb={4}>
-          <Typography variant="h3" fontWeight="700" mb={1}>
+        <Box mb={{ xs: 2, sm: 3, md: 4 }}>
+          <Typography variant="h3" fontWeight="700" mb={1} sx={{ fontSize: { xs: '1.5rem', sm: '2rem', md: '2.125rem' } }}>
             Selamat datang, {session?.name || session?.username || 'Reseller'}! 👋
           </Typography>
-          <Typography variant="body1" color="text.secondary">
+          <Typography variant="body1" color="text.secondary" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
             Berikut adalah ringkasan transaksi dan performa Anda hari ini di {branding?.brand_name || 'OTP Reseller'}.
           </Typography>
         </Box>
 
         {/* KPI Cards */}
-        <Grid container spacing={3} mb={4}>
+        <Grid container spacing={{ xs: 2, sm: 3 }} mb={{ xs: 2, sm: 3, md: 4 }}>
           {/* Card 1: Saldo */}
-          <Grid item xs={12} sm={6} lg={6}>
-            <Card elevation={0} sx={{ backgroundColor: 'primary.light', borderRadius: 3 }}>
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                  <Box>
-                    <Typography color="primary.main" variant="subtitle2" fontWeight={600} mb={1}>
+          <Grid item xs={12} sm={6}>
+            <Card elevation={0} sx={{ backgroundColor: 'primary.light', borderRadius: { xs: 2, sm: 3 } }}>
+              <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography color="primary.main" variant="subtitle2" fontWeight={600} mb={0.5} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                       Saldo Tersedia
                     </Typography>
-                    <Typography variant="h4" fontWeight="700" color="primary.dark">
+                    <Typography variant="h4" fontWeight="700" color="primary.dark" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' }, wordBreak: 'break-word' }}>
                       Rp {saldoTersedia.toLocaleString('id-ID')}
                     </Typography>
                   </Box>
-                  <Avatar sx={{ bgcolor: 'primary.main', width: 48, height: 48 }}>
-                    <IconWallet size={24} />
+                  <Avatar sx={{ bgcolor: 'primary.main', width: { xs: 36, sm: 40, md: 48 }, height: { xs: 36, sm: 40, md: 48 }, flexShrink: 0 }}>
+                    <IconWallet size={20} />
                   </Avatar>
                 </Stack>
               </CardContent>
@@ -433,20 +435,20 @@ const Dashboard = () => {
           </Grid>
           
           {/* Card 2: Order */}
-          <Grid item xs={12} sm={6} lg={6}>
-            <Card elevation={0} sx={{ backgroundColor: 'secondary.light', borderRadius: 3 }}>
-              <CardContent>
-                <Stack direction="row" justifyContent="space-between" alignItems="flex-start">
-                  <Box>
-                    <Typography color="secondary.main" variant="subtitle2" fontWeight={600} mb={1}>
+          <Grid item xs={12} sm={6}>
+            <Card elevation={0} sx={{ backgroundColor: 'secondary.light', borderRadius: { xs: 2, sm: 3 } }}>
+              <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
+                <Stack direction="row" justifyContent="space-between" alignItems="flex-start" spacing={1}>
+                  <Box sx={{ minWidth: 0 }}>
+                    <Typography color="secondary.main" variant="subtitle2" fontWeight={600} mb={0.5} sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                       Order Berhasil
                     </Typography>
-                    <Typography variant="h4" fontWeight="700" color="secondary.dark">
-                      {totalOrder} <Typography component="span" variant="body2" color="text.secondary">hari ini</Typography>
+                    <Typography variant="h4" fontWeight="700" color="secondary.dark" sx={{ fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' } }}>
+                      {totalOrder} <Typography component="span" variant="body2" color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>hari ini</Typography>
                     </Typography>
                   </Box>
-                  <Avatar sx={{ bgcolor: 'secondary.main', width: 48, height: 48 }}>
-                    <IconShoppingCart size={24} />
+                  <Avatar sx={{ bgcolor: 'secondary.main', width: { xs: 36, sm: 40, md: 48 }, height: { xs: 36, sm: 40, md: 48 }, flexShrink: 0 }}>
+                    <IconShoppingCart size={20} />
                   </Avatar>
                 </Stack>
               </CardContent>
@@ -488,15 +490,15 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={{ xs: 2, sm: 3 }}>
           {/* Left Column: Order Form */}
           <Grid item xs={12} lg={7}>
             <DashboardCard title="Beli Nomor Baru" subtitle="Pesan OTP instan dari berbagai layanan">
-              {catalogLoading && <Alert severity="info" sx={{ mb: 2 }}>Memperbarui katalog layanan...</Alert>}
-              {catalogError && <Alert severity="error" sx={{ mb: 2 }}>{catalogError} Menggunakan data default.</Alert>}
+              {catalogLoading && <Alert severity="info" sx={{ mb: 2, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Memperbarui katalog layanan...</Alert>}
+              {catalogError && <Alert severity="error" sx={{ mb: 2, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>{catalogError} Menggunakan data default.</Alert>}
               
-              <Box mb={3}>
-                <Typography variant="subtitle2" mb={1} color="text.secondary">Quick Access (Preset Populer)</Typography>
+              <Box mb={{ xs: 2, sm: 3 }}>
+                <Typography variant="subtitle2" mb={1} color="text.secondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>Quick Access (Preset Populer)</Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
                   {presetCatalog.map((preset) => (
                     <Chip
@@ -507,16 +509,16 @@ const Dashboard = () => {
                       color="primary"
                       variant="outlined"
                       onClick={() => applyPreset(preset)}
-                      sx={{ borderRadius: 2, px: 1, py: 2.5, fontWeight: 500 }}
+                      sx={{ borderRadius: 2, px: { xs: 0.5, sm: 1 }, py: { xs: 2, sm: 2.5 }, fontWeight: 500, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
                     />
                   ))}
                 </Stack>
               </Box>
 
-              <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: { xs: 2, sm: 3 } }} />
 
-              <Box component="form" onSubmit={handleBuyNumber} sx={{ backgroundColor: 'grey.50', p: 3, borderRadius: 3, border: '1px solid', borderColor: 'grey.200' }}>
-                <Grid container spacing={3}>
+              <Box component="form" onSubmit={handleBuyNumber} sx={{ backgroundColor: 'grey.50', p: { xs: 2, sm: 3 }, borderRadius: { xs: 2, sm: 3 }, border: '1px solid', borderColor: 'grey.200' }}>
+                <Grid container spacing={{ xs: 2, sm: 3 }}>
                   <Grid item xs={12} sm={6}>
                     <Autocomplete
                       options={negaraOptions}
@@ -527,7 +529,7 @@ const Dashboard = () => {
                       }}
                       isOptionEqualToValue={(option, value) => option.id === value.id}
                       renderInput={(params) => (
-                        <TextField {...params} label="Negara" required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff' } }} />
+                        <TextField {...params} label="Negara" required fullWidth size={{ xs: 'small', sm: 'medium' }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
                       )}
                     />
                   </Grid>
@@ -543,15 +545,15 @@ const Dashboard = () => {
                       renderOption={(props, option) => (
                         <li {...props} key={option.code}>
                           <Stack direction="row" alignItems="center" spacing={1}>
-                            <Typography>{option.layanan}</Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{option.layanan}</Typography>
+                            <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                               (Rp {Number(option.harga).toLocaleString('id-ID')})
                             </Typography>
                           </Stack>
                         </li>
                       )}
                       renderInput={(params) => (
-                        <TextField {...params} label="Layanan" required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff' } }} />
+                        <TextField {...params} label="Layanan" required fullWidth size={{ xs: 'small', sm: 'medium' }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
                       )}
                     />
                   </Grid>
@@ -564,7 +566,7 @@ const Dashboard = () => {
                         handleOrderFieldChange({ target: { name: 'operator', value: newValue || '' } });
                       }}
                       renderInput={(params) => (
-                        <TextField {...params} label="Operator" required fullWidth sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff' } }} />
+                        <TextField {...params} label="Operator" required fullWidth size={{ xs: 'small', sm: 'medium' }} sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } } }} />
                       )}
                     />
                   </Grid>
@@ -576,19 +578,20 @@ const Dashboard = () => {
                       value={`Rp ${Number(orderForm.price).toLocaleString('id-ID')}`} 
                       fullWidth 
                       disabled 
-                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#eef2f6' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: 'text.primary', fontWeight: 600 } }}
+                      size={{ xs: 'small', sm: 'medium' }}
+                      sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2, backgroundColor: '#eef2f6' }, '& .MuiInputBase-input.Mui-disabled': { WebkitTextFillColor: 'text.primary', fontWeight: 600, fontSize: { xs: '0.875rem', sm: '1rem' } } }}
                     />
                   </Grid>
                   <Grid item xs={12}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2} mt={1}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} spacing={{ xs: 1.5, sm: 2 }} mt={1}>
                       <Button 
                         type="submit" 
                         variant="contained" 
                         color="primary" 
                         disabled={orderLoading} 
-                        size="large"
-                        sx={{ px: 4, py: 1.5, borderRadius: 2, boxShadow: 2 }}
-                        startIcon={orderLoading && <IconRefresh className="spin-icon" />}
+                        size={{ xs: 'medium', sm: 'large' }}
+                        sx={{ px: { xs: 3, sm: 4 }, py: { xs: 1, sm: 1.5 }, borderRadius: 2, boxShadow: 2, fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                        startIcon={orderLoading && <IconRefresh className="spin-icon" size={18} />}
                       >
                         {orderLoading ? 'Memproses...' : 'Beli Nomor Sekarang'}
                       </Button>
@@ -598,8 +601,8 @@ const Dashboard = () => {
                         color="inherit"
                         onClick={handleResetOrderForm} 
                         disabled={orderLoading}
-                        size="large"
-                        sx={{ px: 3, py: 1.5, borderRadius: 2, backgroundColor: '#fff' }}
+                        size={{ xs: 'medium', sm: 'large' }}
+                        sx={{ px: { xs: 2, sm: 3 }, py: { xs: 1, sm: 1.5 }, borderRadius: 2, backgroundColor: '#fff', fontSize: { xs: '0.875rem', sm: '1rem' } }}
                       >
                         Reset Form
                       </Button>
@@ -608,27 +611,26 @@ const Dashboard = () => {
                 </Grid>
               </Box>
 
-              {/* {orderError && <Alert severity="error" sx={{ mt: 3, borderRadius: 2 }}>{orderError}</Alert>} */}
               {orderResult && (
-                <Alert severity="success" sx={{ mt: 3, borderRadius: 2 }} icon={false}>
-                  <Typography variant="subtitle1" fontWeight={600} gutterBottom>✅ Order Berhasil Dibuat!</Typography>
-                  <Grid container spacing={2} mt={1}>
+                <Alert severity="success" sx={{ mt: { xs: 2, sm: 3 }, borderRadius: 2, fontSize: { xs: '0.875rem', sm: '1rem' } }} icon={false}>
+                  <Typography variant="subtitle1" fontWeight={600} gutterBottom sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>✅ Order Berhasil Dibuat!</Typography>
+                  <Grid container spacing={{ xs: 1.5, sm: 2 }} mt={1}>
                     <Grid item xs={12} sm={4}>
-                      <Typography variant="caption" color="text.secondary" display="block">Order ID</Typography>
-                      <Typography variant="body1" fontWeight={500}>{orderResult.order_id}</Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Order ID</Typography>
+                      <Typography variant="body1" fontWeight={500} sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{orderResult.order_id}</Typography>
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <Typography variant="caption" color="text.secondary" display="block">Nomor HP</Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Nomor HP</Typography>
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <Typography variant="body1" fontWeight={600} color="primary.main">{orderResult.number}</Typography>
+                        <Typography variant="body1" fontWeight={600} color="primary.main" sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>{orderResult.number}</Typography>
                         <Tooltip title="Copy">
                           <IconButton size="small" onClick={() => copyToClipboard(orderResult.number)}><IconCopy size={16} /></IconButton>
                         </Tooltip>
                       </Stack>
                     </Grid>
                     <Grid item xs={12} sm={4}>
-                      <Typography variant="caption" color="text.secondary" display="block">Sisa Saldo</Typography>
-                      <Typography variant="body1" fontWeight={500}>Rp {Number(orderResult.remaining_balance).toLocaleString('id-ID')}</Typography>
+                      <Typography variant="caption" color="text.secondary" display="block" sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>Sisa Saldo</Typography>
+                      <Typography variant="body1" fontWeight={500} sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>Rp {Number(orderResult.remaining_balance).toLocaleString('id-ID')}</Typography>
                     </Grid>
                   </Grid>
                 </Alert>
@@ -638,7 +640,7 @@ const Dashboard = () => {
 
           {/* Right Column: OTP Checker & Recent */}
           <Grid item xs={12} lg={5}>
-            <Stack spacing={3}>
+            <Stack spacing={{ xs: 2, sm: 3 }}>
               <DashboardCard title="Cek Status OTP" subtitle="Pantau SMS masuk secara otomatis">
                 <Box component="form" onSubmit={handleCheckOtp}>
                   <TextField
@@ -647,23 +649,24 @@ const Dashboard = () => {
                     onChange={(event) => setOtpId(event.target.value)}
                     fullWidth
                     required
-                    size="medium"
-                    sx={{ mb: 2 }}
+                    size={{ xs: 'small', sm: 'medium' }}
+                    sx={{ mb: { xs: 1.5, sm: 2 }, '& .MuiInputBase-input': { fontSize: { xs: '0.875rem', sm: '1rem' } } }}
                   />
                   
-                  <Paper variant="outlined" sx={{ p: 2, mb: 2, borderRadius: 2, backgroundColor: 'grey.50' }}>
-                    <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={2}>
+                  <Paper variant="outlined" sx={{ p: { xs: 1.5, sm: 2 }, mb: { xs: 1.5, sm: 2 }, borderRadius: 2, backgroundColor: 'grey.50' }}>
+                    <Stack direction={{ xs: 'column', sm: 'row' }} alignItems={{ xs: 'stretch', sm: 'center' }} justifyContent="space-between" spacing={{ xs: 1.5, sm: 2 }}>
                       <FormControlLabel
-                        control={<Switch checked={autoRefreshOtp} onChange={(event) => setAutoRefreshOtp(event.target.checked)} color="primary" />}
-                        label={<Typography variant="body2" fontWeight={500}>Auto-refresh (10s)</Typography>}
+                        control={<Switch checked={autoRefreshOtp} onChange={(event) => setAutoRefreshOtp(event.target.checked)} color="primary" size={{ xs: 'small', sm: 'medium' }} />}
+                        label={<Typography variant="body2" fontWeight={500} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Auto-refresh (10s)</Typography>}
                       />
                       <Button 
                         type="submit" 
                         variant="contained" 
                         color="secondary"
                         disabled={otpLoading || !canCheckOtp}
-                        startIcon={otpLoading && <IconRefresh className="spin-icon" />}
-                        sx={{ borderRadius: 2 }}
+                        startIcon={otpLoading && <IconRefresh className="spin-icon" size={16} />}
+                        size={{ xs: 'small', sm: 'medium' }}
+                        sx={{ borderRadius: 2, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}
                       >
                         {otpLoading ? 'Mengecek...' : 'Cek Sekarang'}
                       </Button>
@@ -672,25 +675,23 @@ const Dashboard = () => {
                 </Box>
 
                 {lastOtpCheckAt && (
-                  <Typography variant="caption" color="text.secondary" display="block" mb={2}>
+                  <Typography variant="caption" color="text.secondary" display="block" mb={{ xs: 1.5, sm: 2 }} sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}>
                     Cek terakhir: {lastOtpCheckAt}
                   </Typography>
                 )}
-
-                {/* {otpError && <Alert severity="error" sx={{ borderRadius: 2 }}>{otpError}</Alert>} */}
                 
                 {otpResult && (
                   <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
-                    <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
-                      <Typography variant="subtitle2" color="text.secondary" gutterBottom>Response SMS / OTP</Typography>
+                    <CardContent sx={{ p: { xs: 1.5, sm: 2 }, '&:last-child': { pb: { xs: 1.5, sm: 2 } } }}>
+                      <Typography variant="subtitle2" color="text.secondary" gutterBottom sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Response SMS / OTP</Typography>
                       {otpResult.sms || otpResult.status === 'PENDING' ? (
-                        <Box sx={{ p: 2, backgroundColor: otpResult.status === 'PENDING' ? 'warning.light' : 'success.light', borderRadius: 1 }}>
-                           <Typography variant="body1" fontWeight={otpResult.sms ? 600 : 400} color={otpResult.status === 'PENDING' ? 'warning.dark' : 'success.dark'}>
+                        <Box sx={{ p: { xs: 1.5, sm: 2 }, backgroundColor: otpResult.status === 'PENDING' ? 'warning.light' : 'success.light', borderRadius: 1 }}>
+                           <Typography variant="body1" fontWeight={otpResult.sms ? 600 : 400} color={otpResult.status === 'PENDING' ? 'warning.dark' : 'success.dark'} sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                              {otpResult.sms ? `💬 ${otpResult.sms}` : '⏳ Menunggu SMS masuk...'}
                            </Typography>
                         </Box>
                       ) : (
-                         <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: '0.85rem' }}>{JSON.stringify(otpResult, null, 2)}</pre>
+                         <pre style={{ margin: 0, whiteSpace: 'pre-wrap', fontSize: { xs: '0.75rem', sm: '0.85rem' } }}>{JSON.stringify(otpResult, null, 2)}</pre>
                       )}
                     </CardContent>
                   </Card>
@@ -700,29 +701,29 @@ const Dashboard = () => {
               {/* Minimalist Recent Orders */}
               <DashboardCard title="Riwayat Terakhir" subtitle="Aktivitas order terbaru Anda">
                 {recentOrders.length === 0 ? (
-                  <Box py={3} textAlign="center">
-                    <Typography color="text.secondary" variant="body2">Belum ada aktivitas. Mulai beli nomor!</Typography>
+                  <Box py={{ xs: 2, sm: 3 }} textAlign="center">
+                    <Typography color="text.secondary" variant="body2" sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Belum ada aktivitas. Mulai beli nomor!</Typography>
                   </Box>
                 ) : (
-                  <TableContainer sx={{ whiteSpace: 'nowrap', overflowX: 'auto' }}>
+                  <TableContainer sx={{ overflowX: 'auto' }}>
                     <Table size="small">
                       <TableBody>
                         {recentOrders.map((item) => (
                           <TableRow key={`${item.orderId}-${item.at}`} sx={{ '&:last-child td, &:last-child th': { border: 0 } }}>
-                            <TableCell sx={{ pl: 0, py: 1.5 }}>
-                              <Stack direction="row" alignItems="center" spacing={1.5}>
-                                <Avatar sx={{ width: 32, height: 32, bgcolor: 'grey.100' }}>
+                            <TableCell sx={{ pl: 0, py: { xs: 1, sm: 1.5 } }}>
+                              <Stack direction="row" alignItems="center" spacing={{ xs: 1, sm: 1.5 }}>
+                                <Avatar sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 }, bgcolor: 'grey.100' }}>
                                   {getServiceIcon(item.service)}
                                 </Avatar>
-                                <Box>
-                                  <Typography variant="subtitle2" fontWeight={600}>+{item.number}</Typography>
-                                  <Typography variant="caption" color="text.secondary">{item.service.toUpperCase()} • {item.operator}</Typography>
+                                <Box sx={{ minWidth: 0 }}>
+                                  <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>+{item.number}</Typography>
+                                  <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>{item.service.toUpperCase()} • {item.operator}</Typography>
                                 </Box>
                               </Stack>
                             </TableCell>
-                            <TableCell align="right" sx={{ pr: 0, py: 1.5 }}>
-                              <Typography variant="subtitle2" fontWeight={600}>Rp {Number(item.price).toLocaleString('id-ID')}</Typography>
-                              <Typography variant="caption" color="text.secondary">{item.at}</Typography>
+                            <TableCell align="right" sx={{ pr: 0, py: { xs: 1, sm: 1.5 } }}>
+                              <Typography variant="subtitle2" fontWeight={600} sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>Rp {Number(item.price).toLocaleString('id-ID')}</Typography>
+                              <Typography variant="caption" color="text.secondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>{item.at}</Typography>
                             </TableCell>
                           </TableRow>
                         ))}

@@ -26,6 +26,8 @@ import {
   Chip,
   MenuItem,
   CircularProgress,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { IconPlus, IconPencil, IconTrash, IconAlertCircle } from '@tabler/icons-react';
 import { apiFetch, readJsonSafe } from 'src/utils/apiClient';
@@ -205,6 +207,10 @@ export default function MarkupManagement() {
     }
   };
 
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
+
   const calculateExample = (percentage, fixed, basePrice = 10000) => {
     const markupFromPerc = basePrice * (percentage / 100);
     const total = basePrice + markupFromPerc + fixed;
@@ -212,23 +218,25 @@ export default function MarkupManagement() {
   };
 
   return (
-    <Box sx={{ width: '100%' }}>
-      <Stack spacing={3}>
+    <Box sx={{ width: '100%', px: { xs: 1, sm: 2, md: 3 } }}>
+      <Stack spacing={{ xs: 2, sm: 3 }}>
         {/* Header */}
-        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: { xs: 'flex-start', sm: 'center' }, flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
           <Box>
-            <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 1, fontSize: { xs: '1.25rem', sm: '1.5rem' } }}>
               Manajemen Markup
             </Typography>
-            <Typography variant="body2" color="textSecondary">
+            <Typography variant="body2" color="textSecondary" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
               Atur markup untuk semua service atau per service
             </Typography>
           </Box>
           <Button
             variant="contained"
             color="primary"
-            startIcon={<IconPlus size={18} />}
+            startIcon={<IconPlus size={isMobile ? 16 : 18} />}
             onClick={() => handleOpenDialog()}
+            size={isMobile ? 'small' : 'medium'}
+            sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
           >
             Tambah Markup
           </Button>
@@ -236,95 +244,111 @@ export default function MarkupManagement() {
 
         {/* Error Alert */}
         {error && (
-          <Alert severity="error" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <IconAlertCircle size={20} />
+          <Alert severity="error" sx={{ display: 'flex', alignItems: 'center', gap: 1, fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+            <IconAlertCircle size={isMobile ? 18 : 20} />
             {error}
           </Alert>
         )}
 
-        {/* Markup Table */}
+        {/* Markup Table / Mobile Cards */}
         <Card>
-          <CardHeader title="Daftar Markup" />
-          <CardContent>
+          <CardHeader title="Daftar Markup" sx={{ '& .MuiCardHeader-title': { fontSize: { xs: '1rem', sm: '1.25rem' } } }} />
+          <CardContent sx={{ p: { xs: 1.5, sm: 2 } }}>
             {loading ? (
-              <Typography align="center" sx={{ py: 4 }}>
+              <Typography align="center" sx={{ py: 4, fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                 Memuat...
               </Typography>
             ) : markups.length === 0 ? (
-              <Typography align="center" sx={{ py: 4, color: 'textSecondary' }}>
+              <Typography align="center" sx={{ py: 4, color: 'textSecondary', fontSize: { xs: '0.875rem', sm: '1rem' } }}>
                 Tidak ada markup
               </Typography>
+            ) : isMobile ? (
+              /* Mobile View - Card List */
+              <Stack spacing={1.5}>
+                {markups.map((markup) => (
+                  <Paper key={markup.id} variant="outlined" sx={{ p: 2, borderRadius: 2 }}>
+                    <Stack spacing={1}>
+                      <Box display="flex" justifyContent="space-between" alignItems="flex-start">
+                        <Box>
+                          <Typography variant="body2" sx={{ fontWeight: 600, fontSize: '0.875rem' }}>
+                            {markup.service_name || 'GLOBAL'}
+                          </Typography>
+                          <Typography variant="caption" color="textSecondary" fontSize="0.7rem">
+                            {markup.service_id ? `ID: ${markup.service_id}` : 'Berlaku untuk semua'}
+                          </Typography>
+                        </Box>
+                        <Switch
+                          checked={markup.is_active}
+                          onChange={() => handleToggle(markup.id, markup.is_active)}
+                          size="small"
+                        />
+                      </Box>
+                      <Box display="flex" justifyContent="space-between" alignItems="center">
+                        <Typography variant="body2" fontSize="0.75rem">
+                          {markup.markup_percentage}% + Rp {markup.markup_fixed.toLocaleString('id-ID')}
+                        </Typography>
+                        <Chip
+                          label={`Rp ${calculateExample(markup.markup_percentage, markup.markup_fixed).toLocaleString('id-ID')}`}
+                          size="small"
+                          variant="outlined"
+                          sx={{ fontSize: '0.65rem', height: 20 }}
+                        />
+                      </Box>
+                      <Stack direction="row" spacing={1} justifyContent="flex-end">
+                        <IconButton size="small" onClick={() => handleOpenDialog(markup)} sx={{ color: 'primary.main' }}>
+                          <IconPencil size={16} />
+                        </IconButton>
+                        <IconButton size="small" onClick={() => handleDelete(markup.id)} sx={{ color: 'error.main' }}>
+                          <IconTrash size={16} />
+                        </IconButton>
+                      </Stack>
+                    </Stack>
+                  </Paper>
+                ))}
+              </Stack>
             ) : (
-              <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #e0e0e0' }}>
-                <Table>
+              /* Desktop/Tablet View - Table */
+              <TableContainer component={Paper} sx={{ boxShadow: 'none', border: '1px solid #e0e0e0', overflowX: 'auto' }}>
+                <Table size={isTablet ? 'small' : 'medium'}>
                   <TableHead>
                     <TableRow sx={{ backgroundColor: '#f5f5f5' }}>
-                      <TableCell sx={{ fontWeight: 600 }}>Service</TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="right">
-                        Persentase
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="right">
-                        Fixed
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="center">
-                        Contoh Harga
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="center">
-                        Status
-                      </TableCell>
-                      <TableCell sx={{ fontWeight: 600 }} align="right">
-                        Aksi
-                      </TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' } }}>Service</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' } }} align="right">Persentase</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' } }} align="right">Fixed</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' } }} align="center">Contoh Harga</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' } }} align="center">Status</TableCell>
+                      <TableCell sx={{ fontWeight: 600, fontSize: { xs: '0.7rem', sm: '0.75rem', md: '0.875rem' } }} align="right">Aksi</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {markups.map((markup, idx) => (
+                    {markups.map((markup) => (
                       <TableRow key={markup.id} sx={{ '&:hover': { backgroundColor: '#fafafa' } }}>
-                        <TableCell>
+                        <TableCell sx={{ py: { xs: 0.75, sm: 1 }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                           <Box>
-                            <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                            <Typography variant="body2" sx={{ fontWeight: 600, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                               {markup.service_name || 'GLOBAL'}
                             </Typography>
-                            <Typography variant="caption" color="textSecondary">
+                            <Typography variant="caption" color="textSecondary" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }}>
                               {markup.service_id ? `ID: ${markup.service_id}` : 'Berlaku untuk semua'}
                             </Typography>
                           </Box>
                         </TableCell>
-                        <TableCell align="right">{markup.markup_percentage}%</TableCell>
-                        <TableCell align="right">
+                        <TableCell align="right" sx={{ py: { xs: 0.75, sm: 1 }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>{markup.markup_percentage}%</TableCell>
+                        <TableCell align="right" sx={{ py: { xs: 0.75, sm: 1 }, fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
                           Rp {markup.markup_fixed.toLocaleString('id-ID')}
                         </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={`Rp ${calculateExample(
-                              markup.markup_percentage,
-                              markup.markup_fixed
-                            ).toLocaleString('id-ID')}`}
-                            size="small"
-                            variant="outlined"
-                          />
+                        <TableCell align="center" sx={{ py: { xs: 0.75, sm: 1 } }}>
+                          <Chip label={`Rp ${calculateExample(markup.markup_percentage, markup.markup_fixed).toLocaleString('id-ID')}`} size="small" variant="outlined" sx={{ fontSize: { xs: '0.65rem', sm: '0.75rem' } }} />
                         </TableCell>
-                        <TableCell align="center">
-                          <Switch
-                            checked={markup.is_active}
-                            onChange={() => handleToggle(markup.id, markup.is_active)}
-                            size="small"
-                          />
+                        <TableCell align="center" sx={{ py: { xs: 0.75, sm: 1 } }}>
+                          <Switch checked={markup.is_active} onChange={() => handleToggle(markup.id, markup.is_active)} size="small" />
                         </TableCell>
-                        <TableCell align="right">
+                        <TableCell align="right" sx={{ py: { xs: 0.75, sm: 1 } }}>
                           <Stack direction="row" spacing={1} justifyContent="flex-end">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleOpenDialog(markup)}
-                              sx={{ color: 'primary.main' }}
-                            >
+                            <IconButton size="small" onClick={() => handleOpenDialog(markup)} sx={{ color: 'primary.main' }}>
                               <IconPencil size={16} />
                             </IconButton>
-                            <IconButton
-                              size="small"
-                              onClick={() => handleDelete(markup.id)}
-                              sx={{ color: 'error.main' }}
-                            >
+                            <IconButton size="small" onClick={() => handleDelete(markup.id)} sx={{ color: 'error.main' }}>
                               <IconTrash size={16} />
                             </IconButton>
                           </Stack>
