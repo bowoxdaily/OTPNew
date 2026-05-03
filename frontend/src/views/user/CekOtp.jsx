@@ -37,8 +37,12 @@ const CekOtp = () => {
   const [otpError, setOtpError] = useState('');
 
   const [now, setNow] = useState(Date.now());
+
+  // Pagination state (server-side)
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const interval = setInterval(() => setNow(Date.now()), 1000);
@@ -54,11 +58,9 @@ const CekOtp = () => {
     setPage(0);
   };
 
-  const paginatedOrders = orders.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage);
-
   useEffect(() => {
     fetchOrders();
-  }, []);
+  }, [page, rowsPerPage]);
 
   const isOrderExpired = (createdAtStr) => {
     const createdTime = new Date(createdAtStr).getTime();
@@ -89,10 +91,15 @@ const CekOtp = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await apiFetch('/api/orders');
+      const currentPage = page + 1; // API uses 1-based page
+      const res = await apiFetch(`/api/orders?page=${currentPage}&limit=${rowsPerPage}`);
       const data = await readJsonSafe(res);
       if (res.ok && data.success) {
         setOrders(data.data);
+        if (data.pagination) {
+          setTotalCount(data.pagination.total);
+          setTotalPages(data.pagination.totalPages);
+        }
       } else {
         throw new Error(data.message || 'Gagal mengambil riwayat order');
       }
@@ -290,7 +297,7 @@ const CekOtp = () => {
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedOrders.map((item) => (
+                orders.map((item) => (
                   <TableRow key={item.id} hover>
                     <TableCell>
                       <Typography variant="body2">{new Date(item.created_at).toLocaleString('id-ID')}</Typography>
@@ -354,7 +361,7 @@ const CekOtp = () => {
             <Box textAlign="center" py={5}><Typography color="text.secondary">Belum ada pesanan nomor.</Typography></Box>
           ) : (
             <Stack spacing={2} p={2} sx={{ bgcolor: 'grey.50' }}>
-              {paginatedOrders.map((item) => (
+              {orders.map((item) => (
                 <Card key={item.id} variant="outlined" sx={{ borderRadius: 2, bgcolor: 'background.paper' }}>
                   <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
                     <Box display="flex" justifyContent="space-between" mb={1}>
@@ -413,18 +420,17 @@ const CekOtp = () => {
           )}
         </Box>
         
-        {orders.length > 0 && (
-          <TablePagination
-            component="div"
-            count={orders.length}
-            page={page}
-            onPageChange={handleChangePage}
-            rowsPerPage={rowsPerPage}
-            onRowsPerPageChange={handleChangeRowsPerPage}
-            labelRowsPerPage="Per halaman:"
-            labelDisplayedRows={({ from, to, count }) => `${from}–${to} dari ${count !== -1 ? count : `lebih dari ${to}`}`}
-          />
-        )}
+        <TablePagination
+          component="div"
+          count={totalCount}
+          page={page}
+          onPageChange={handleChangePage}
+          rowsPerPage={rowsPerPage}
+          onRowsPerPageChange={handleChangeRowsPerPage}
+          rowsPerPageOptions={[5, 10, 25, 50]}
+          labelRowsPerPage="Per halaman:"
+          labelDisplayedRows={({ from, to, count }) => `${from}–${to} dari ${count}`}
+        />
       </Card>
 
       {/* Dialog Cek OTP */}

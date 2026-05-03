@@ -133,6 +133,7 @@ const LandingPage = () => {
         <ul className="lp-nav-links">
           <li><a href="#fitur"      className="lp-navlink">Fitur</a></li>
           <li><a href="#cara-kerja" className="lp-navlink">Cara Kerja</a></li>
+          <li><a href="#panduan"    className="lp-navlink">Panduan</a></li>
           <li><a href="#faq"        className="lp-navlink">FAQ</a></li>
           <li><Link to="/auth/login"    style={S.btnO}>Masuk</Link></li>
           <li><Link to="/auth/register" style={{...S.btnP, padding:'10px 22px', fontSize:'.9rem'}}>Daftar Gratis</Link></li>
@@ -149,6 +150,7 @@ const LandingPage = () => {
       <div className={`lp-mobile-menu${menuOpen?' open':''}`} role="navigation">
         <a href="#fitur"      className="lp-mobile-link" onClick={()=>setMenuOpen(false)}>🏆 Fitur</a>
         <a href="#cara-kerja" className="lp-mobile-link" onClick={()=>setMenuOpen(false)}>⚙️ Cara Kerja</a>
+        <a href="#panduan"    className="lp-mobile-link" onClick={()=>setMenuOpen(false)}>📖 Panduan</a>
         <a href="#faq"        className="lp-mobile-link" onClick={()=>setMenuOpen(false)}>❓ FAQ</a>
         <Link to="/auth/login"    style={{...S.btnO, textAlign:'center', marginTop:4}} onClick={()=>setMenuOpen(false)}>Masuk</Link>
         <Link to="/auth/register" style={{...S.btnP, textAlign:'center'}} onClick={()=>setMenuOpen(false)}>Daftar Gratis 🚀</Link>
@@ -230,8 +232,49 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* PANDUAN PENGGUNAAN */}
+      <section id="panduan" style={S.sectionAlt} aria-labelledby="guide-h">
+        <div style={S.center}>
+          <p style={S.lbl}>Panduan Penggunaan</p>
+          <h2 id="guide-h" style={S.h2}>Cara Menggunakan Layanan OTP</h2>
+          <p style={S.subTxt}>Langkah-langkah penting untuk memastikan pengalaman terbaik</p>
+        </div>
+        <div className="lp-faq-grid" style={{ maxWidth: 800 }}>
+          <div style={{...S.faqCard, borderLeft: `4px solid ${primary}`}}>
+            <h3 style={{fontWeight:700,marginBottom:8,fontSize:'.95rem',color:primary}}>📋 Ordering Steps</h3>
+            <ol style={{color:'#555',fontSize:'.88rem',lineHeight:1.8,margin:0,paddingLeft:20}}>
+              <li>Pilih layanan dari daftar yang tersedia atau cari di kolom pencarian</li>
+              <li>Klik tombol <strong>Beli</strong> untuk memesan layanan yang dipilih</li>
+              <li>Pastikan saldo Anda cukup untuk melakukan pembelian</li>
+            </ol>
+          </div>
+
+          <div style={{...S.faqCard, borderLeft: `4px solid ${primary}`}}>
+            <h3 style={{fontWeight:700,marginBottom:8,fontSize:'.95rem',color:primary}}>⚠️ Hal Penting yang Perlu Diketahui</h3>
+            <ul style={{color:'#555',fontSize:'.88rem',lineHeight:1.8,margin:0,paddingLeft:20}}>
+              <li><strong>klik tombol Ready</strong> sebelum meminta kode OTP/SMS</li>
+              <li>Setelah klik Ready, Anda siap menerima OTP. Jika tidak diterima, klik <strong>Cancel</strong> sebelum waktu habis untuk membatalkan. Saldo akan otomatis dikembalikan.</li>
+              <li>Ingin meminta OTP lagi? Klik <strong>Resend</strong> — GRATIS selama masih ada waktu tersisa</li>
+              <li>Setelah selesai, klik <strong>Done</strong> untuk mengakhiri sesi</li>
+              <li>OTP tidak masuk dan waktu belum habis? Klik <strong>Cancel</strong>, saldo akan otomatis dikembalikan</li>
+              <li>OTP tidak masuk dan waktu sudah habis? Saldo akan hangus</li>
+            </ul>
+          </div>
+
+          <div style={{...S.faqCard, background:`${primary}08`, border:`1px solid ${primary}30`}}>
+            <h3 style={{fontWeight:700,marginBottom:8,fontSize:'.95rem',color:primary}}>💡 Tips Pro</h3>
+            <ul style={{color:'#555',fontSize:'.88rem',lineHeight:1.8,margin:0,paddingLeft:20}}>
+              <li>Selalu pastikan klik <strong>Set Ready</strong> sebelum meminta OTP dari aplikasi target</li>
+              <li>Jangan tunggu sampai waktu hampir habis untuk cancel jika OTP tidak masuk</li>
+              <li>Gunakan fitur <strong>Aktifkan Kembali</strong> untuk order yang sudah selesai jika ingin menerima OTP baru</li>
+              <li>Simpan nomor yang sering digunakan untuk mempercepat proses di masa depan</li>
+            </ul>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ */}
-      <section id="faq" style={S.sectionAlt} aria-labelledby="faq-h">
+      <section id="faq" style={S.section} aria-labelledby="faq-h">
         <div style={S.center}>
           <p style={S.lbl}>FAQ</p>
           <h2 id="faq-h" style={S.h2}>Pertanyaan yang Sering Ditanya</h2>
@@ -258,7 +301,7 @@ const LandingPage = () => {
         <FooterLogo />
         <p style={S.ftSub}>{tagline}</p>
         <ul className="lp-footer-links">
-          {[['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#faq','FAQ']].map(([h,l])=>(
+          {[['#fitur','Fitur'],['#cara-kerja','Cara Kerja'],['#panduan','Panduan'],['#faq','FAQ']].map(([h,l])=>(
             <li key={l}><a href={h} style={S.ftLink}>{l}</a></li>
           ))}
           <li><Link to="/auth/login"    style={S.ftLink}>Login</Link></li>

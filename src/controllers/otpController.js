@@ -11,7 +11,7 @@ const {
   reactiveOrder,
 } = require('../services/providerService');
 const { findById, listUsers, atomicDeductBalance, atomicRefundBalance } = require('../store/usersStore');
-const { createOrder, getAllOrders, getUserOrders, getOrderByProviderId, updateOrderStatus } = require('../store/ordersStore');
+const { createOrder, getAllOrders, getUserOrders, getUserOrdersPaginated, countUserOrders, getOrderByProviderId, updateOrderStatus } = require('../store/ordersStore');
 const { getMarkupForService, calculateResellerPrice, getAllMarkupsAsMap, getMarkupFromMap } = require('./markupController');
 const { getLayananFromCache, syncLayananCache } = require('../services/cacheService');
 const { decrementActiveOrder } = require('../middlewares/securityMiddleware');
@@ -396,7 +396,15 @@ async function getUserOrdersHandler(req, res, next) {
     if (!userId) {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
-    const orders = await getUserOrders(userId);
+
+    // Pagination params
+    const page = Math.max(1, parseInt(req.query.page) || 1);
+    const limit = Math.min(50, Math.max(1, parseInt(req.query.limit) || 10));
+    const offset = (page - 1) * limit;
+
+    // Get paginated orders
+    const orders = await getUserOrdersPaginated(userId, limit, offset);
+    const totalCount = await countUserOrders(userId);
 
     // Enrich orders with service name from cache
     const enrichedOrders = await Promise.all(
@@ -416,7 +424,16 @@ async function getUserOrdersHandler(req, res, next) {
       })
     );
 
-    return res.status(200).json({ success: true, data: enrichedOrders });
+    return res.status(200).json({
+      success: true,
+      data: enrichedOrders,
+      pagination: {
+        page,
+        limit,
+        total: totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+      },
+    });
   } catch (error) {
     return next(error);
   }

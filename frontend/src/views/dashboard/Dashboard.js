@@ -125,7 +125,7 @@ const Dashboard = () => {
         const res = await apiFetch('/api/orders');
         const data = await readJsonSafe(res);
         if (res.ok && data.success && Array.isArray(data.data) && active) {
-          const mappedOrders = data.data.slice(0, 10).map(item => ({
+          const mappedOrders = data.data.slice(0, 5).map(item => ({
             orderId: item.provider_order_id || '-',
             number: item.number || '-',
             service: item.layanan || 'Unknown',
@@ -454,6 +454,39 @@ const Dashboard = () => {
           </Grid>
 
         </Grid>
+
+        {/* Panduan Penggunaan */}
+        <Card elevation={0} sx={{ border: '1px solid', borderColor: 'divider', borderRadius: { xs: 2, sm: 3 }, mb: { xs: 2, sm: 4 } }}>
+          <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+            <Typography variant="h6" fontWeight={700} mb={{ xs: 1.5, sm: 2 }} color="primary.main" sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}>
+              📖 Tata Cara Penggunaan
+            </Typography>
+            <Grid container spacing={{ xs: 2, sm: 3 }}>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" gutterBottom sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                  Langkah Pembelian:
+                </Typography>
+                <Box component="ol" sx={{ pl: { xs: 2.5, sm: 3 }, m: 0, fontSize: { xs: '0.8rem', sm: '0.875rem' }, lineHeight: 1.7 }}>
+                  <li>Pilih negara dan layanan yang diinginkan</li>
+                  <li>Klik <strong>"Beli Nomor"</strong> dan pastikan saldo cukup</li>
+                  <li>Setelah mendapat nomor, klik <strong>"Set Ready"</strong> sebelum meminta OTP</li>
+                  <li>Masukkan nomor ke aplikasi target dan tunggu SMS masuk</li>
+                </Box>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <Typography variant="subtitle2" fontWeight={600} color="text.secondary" gutterBottom sx={{ fontSize: { xs: '0.8rem', sm: '0.875rem' } }}>
+                  Tips & Penting:
+                </Typography>
+                <Box component="ul" sx={{ pl: { xs: 2.5, sm: 3 }, m: 0, fontSize: { xs: '0.8rem', sm: '0.875rem' }, lineHeight: 1.7 }}>
+                  <li><strong>Cancel</strong> sebelum waktu habis → saldo kembali</li>
+                  <li><strong>Resend</strong> (GRATIS) untuk ambil ulang SMS</li>
+                  <li><strong>Reactive</strong> untuk order selesai dipakai lagi</li>
+                  <li><Box component="span" sx={{ color: 'error.main', fontWeight: 600 }}>⚠️ OTP tidak masuk & waktu habis = saldo hangus!</Box></li>
+                </Box>
+              </Grid>
+            </Grid>
+          </CardContent>
+        </Card>
 
         <Grid container spacing={3}>
           {/* Left Column: Order Form */}

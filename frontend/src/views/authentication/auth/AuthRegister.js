@@ -15,6 +15,7 @@ import { IconUser, IconLock, IconEye, IconEyeOff, IconId, IconMail, IconPhone } 
 
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 import { apiFetch, readJsonSafe } from 'src/utils/apiClient';
+import { sanitizeInput, sanitizeApiMessage, isValidEmail } from 'src/utils/securityUtils';
 
 /**
  * Simple password strength meter
@@ -54,35 +55,62 @@ const AuthRegister = ({ title, subtitle, subtext }) => {
         setError('');
         setSuccess('');
 
-        if (!name.trim()) {
+        // Sanitize all inputs
+        const sanitizedName = sanitizeInput(name.trim());
+        const sanitizedEmail = sanitizeInput(email.trim()).toLowerCase();
+        const sanitizedPhone = sanitizeInput(phone.trim());
+        const sanitizedUsername = sanitizeInput(username.trim()).toLowerCase();
+
+        // Validate name
+        if (!sanitizedName || sanitizedName.length < 2) {
             setError('Nama lengkap tidak boleh kosong');
             return;
         }
-        if (!email.trim()) {
+        if (sanitizedName.length > 100) {
+            setError('Nama terlalu panjang (maksimal 100 karakter)');
+            return;
+        }
+
+        // Validate email
+        if (!sanitizedEmail) {
             setError('Email tidak boleh kosong');
             return;
         }
-        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+        if (!isValidEmail(sanitizedEmail)) {
             setError('Format email tidak valid');
             return;
         }
-        if (!phone.trim()) {
+        if (sanitizedEmail.length > 100) {
+            setError('Email terlalu panjang');
+            return;
+        }
+
+        // Validate phone
+        if (!sanitizedPhone) {
             setError('Nomor HP tidak boleh kosong');
             return;
         }
-        const digitsOnly = phone.replace(/[^0-9]/g, '');
+        const digitsOnly = sanitizedPhone.replace(/[^0-9]/g, '');
         if (digitsOnly.length < 10 || digitsOnly.length > 15) {
             setError('Nomor HP tidak valid (10-15 digit)');
             return;
         }
-        if (!username.trim()) {
+
+        // Validate username
+        if (!sanitizedUsername) {
             setError('Username tidak boleh kosong');
             return;
         }
-        if (username.trim().length < 3) {
+        if (sanitizedUsername.length < 3) {
             setError('Username minimal 3 karakter');
             return;
         }
+        if (sanitizedUsername.length > 30) {
+            setError('Username maksimal 30 karakter');
+            return;
+        }
+
+        // Validate password
         if (!password) {
             setError('Password tidak boleh kosong');
             return;
@@ -91,16 +119,20 @@ const AuthRegister = ({ title, subtitle, subtext }) => {
             setError('Password minimal 6 karakter');
             return;
         }
+        if (password.length > 128) {
+            setError('Password terlalu panjang');
+            return;
+        }
 
         setLoading(true);
         try {
             const response = await apiFetch('/api/auth/register', {
                 method: 'POST',
                 body: JSON.stringify({
-                    name: name.trim(),
-                    email: email.trim(),
-                    phone: phone.trim(),
-                    username: username.trim(),
+                    name: sanitizedName,
+                    email: sanitizedEmail,
+                    phone: sanitizedPhone,
+                    username: sanitizedUsername,
                     password,
                 }),
             });
@@ -111,7 +143,9 @@ const AuthRegister = ({ title, subtitle, subtext }) => {
             setSuccess('Akun berhasil dibuat! Mengalihkan ke halaman login...');
             setTimeout(() => navigate('/auth/login'), 1500);
         } catch (registerError) {
-            setError(registerError.message || 'Pendaftaran gagal. Silakan coba lagi.');
+            // Sanitize error message to prevent XSS
+            const safeError = sanitizeApiMessage(registerError.message || 'Pendaftaran gagal. Silakan coba lagi.');
+            setError(safeError);
         } finally {
             setLoading(false);
         }

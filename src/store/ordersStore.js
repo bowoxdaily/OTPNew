@@ -62,6 +62,32 @@ async function getUserOrders(userId) {
   return data || [];
 }
 
+async function getUserOrdersPaginated(userId, limit = 10, offset = 0) {
+  const { data, error } = await supabase
+    .from('orders')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .range(offset, offset + limit - 1);
+
+  if (error) {
+    throw Object.assign(new Error('Gagal membaca riwayat order'), { statusCode: 500, details: error.message });
+  }
+  return data || [];
+}
+
+async function countUserOrders(userId) {
+  const { count, error } = await supabase
+    .from('orders')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', userId);
+
+  if (error) {
+    throw Object.assign(new Error('Gagal menghitung order'), { statusCode: 500, details: error.message });
+  }
+  return count || 0;
+}
+
 async function getOrderByProviderId(provider_order_id) {
   const { data, error } = await supabase
     .from('orders')
@@ -94,6 +120,8 @@ module.exports = {
   createOrder,
   getAllOrders,
   getUserOrders,
+  getUserOrdersPaginated,
+  countUserOrders,
   getOrderByProviderId,
   updateOrderStatus,
 };

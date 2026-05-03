@@ -15,6 +15,7 @@ import { IconUser, IconLock, IconEye, IconEyeOff } from '@tabler/icons-react';
 import CustomTextField from '../../../components/forms/theme-elements/CustomTextField';
 import { setUserSession } from 'src/utils/authSession';
 import { apiFetch, readJsonSafe } from 'src/utils/apiClient';
+import { sanitizeInput, sanitizeApiMessage, escapeHtml } from 'src/utils/securityUtils';
 
 const AuthLogin = ({ title, subtitle, subtext }) => {
     const navigate = useNavigate();
@@ -28,7 +29,10 @@ const AuthLogin = ({ title, subtitle, subtext }) => {
         event.preventDefault();
         setError('');
 
-        if (!username.trim()) {
+        // Sanitize username input
+        const sanitizedUsername = sanitizeInput(username.trim());
+
+        if (!sanitizedUsername) {
             setError('Username tidak boleh kosong');
             return;
         }
@@ -37,11 +41,17 @@ const AuthLogin = ({ title, subtitle, subtext }) => {
             return;
         }
 
+        // Prevent XSS in username format
+        if (sanitizedUsername.length > 50) {
+            setError('Username terlalu panjang');
+            return;
+        }
+
         setLoading(true);
         try {
             const response = await apiFetch('/api/auth/login', {
                 method: 'POST',
-                body: JSON.stringify({ username: username.trim(), password }),
+                body: JSON.stringify({ username: sanitizedUsername, password }),
             });
             const data = await readJsonSafe(response);
             if (!response.ok || !data.success) {
@@ -49,15 +59,17 @@ const AuthLogin = ({ title, subtitle, subtext }) => {
             }
             const user = data?.data?.user || {};
             setUserSession({
-                username: user.username,
+                username: sanitizeInput(user.username),
                 userId: user.id,
-                name: user.name,
+                name: sanitizeInput(user.name),
                 role: user.role,
                 token: data?.data?.token,
             });
             navigate(user.role === 'admin' ? '/dashboard/admin' : '/dashboard/user');
         } catch (loginError) {
-            setError(loginError.message || 'Login gagal. Periksa username dan password Anda.');
+            // Sanitize error message to prevent XSS
+            const safeError = sanitizeApiMessage(loginError.message || 'Login gagal. Periksa username dan password Anda.');
+            setError(safeError);
         } finally {
             setLoading(false);
         }
